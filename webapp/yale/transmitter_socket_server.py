@@ -6,14 +6,16 @@
 #
 # SPDX-License-Identifier:    BSD-3-Clause
 
+import sys
 import os,django
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'mysite.settings'
 django.setup()
 from django.conf import settings
 import logging
 logger = logging.getLogger(__name__)
 
-import sys
+#import sys
 import socket
 import serial
 import serial.rs485
@@ -202,7 +204,7 @@ it waits for the next connect.
                             data = bytearray([0x05,0x91,0x01,0x11,0x81,0x0f])                             
                             data_hex = ','.join('{:02x}'.format(x) for x in data)
                             logger.debug('client_socket.recv: %s\n' % data_hex)
-                            #ser.write(data)                 # get a bunch of bytes and send them
+                            ser.write(data)                 # get a bunch of bytes and send them
                     except socket.error as msg:
                         if args.develop:
                             raise
