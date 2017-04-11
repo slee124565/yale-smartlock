@@ -31,6 +31,7 @@ YALE_DATA_UNLOCK_BY_CARD        = [0x05,0x19,0x81,0x24]
 YALE_DATA_ALARM_INTRUDER        = [0x05,0x19,0x82,0x11]
 YALE_DATA_ALARM_DAMAGE          = [0x05,0x19,0x82,0x12]
 YALE_DATA_ALARM_FIRE            = [0x05,0x19,0x82,0x13]
+YALE_DATA_ALARM_CLEAR           = [0x05,0x19,0x82,0x14]
 
 YALE_CMD_STATUS                 = [0x05,0x91,0x01,0x11,0x81,0x0f]
 YALE_CMD_UNLOCK                 = [0x05,0x91,0x02,0x11,0x82,0x0f]
@@ -66,7 +67,7 @@ class SerialToNet(serial.threaded.Protocol):
     
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
-        logger.info('recv data frame: %s' % data_hex)
+        logger.debug('recv data frame: %s' % data_hex)
         if len(data_frame) < 6:
             logger.warning('data frame length invalid, ignore')
         else:
@@ -79,34 +80,40 @@ class SerialToNet(serial.threaded.Protocol):
                 event_type = 'unlock'
                 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
-                logger.info('DDL event => unlock by pin code')
+                logger.info('DDL event => unlock by ibutton')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/ibutton'
                 event_type = 'unlock'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
-                logger.info('DDL event => unlock by pin code')
+                logger.info('DDL event => unlock by fingerprint')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/fingerprint'
                 event_type = 'unlock'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
-                logger.info('DDL event => unlock by pin code')
+                logger.info('DDL event => unlock by card')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/card'
                 event_type = 'unlock'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_INTRUDER)],YALE_DATA_ALARM_INTRUDER) == 0:
-                logger.info('DDL event => unlock by pin code')
+                logger.info('DDL event => intruder alarm')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/intruder'
                 event_type = 'alarm'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_DAMAGE)],YALE_DATA_ALARM_DAMAGE) == 0:
-                logger.info('DDL event => unlock by pin code')
+                logger.info('DDL event => damage alarm')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/damage'
                 event_type = 'alarm'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_FIRE)],YALE_DATA_ALARM_FIRE) == 0:
-                logger.info('DDL event => unlock by pin code')
+                logger.info('DDL event => fire alarm')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/fire'
                 event_type = 'alarm'
+                
+            if cmp(data_frame[:len(YALE_DATA_ALARM_CLEAR)],YALE_DATA_ALARM_CLEAR) == 0:
+                logger.info('DDL event => alarm clear')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/clear'
+                event_type = 'alarm'
+                
                 
             if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0 or \
                 cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
@@ -126,6 +133,8 @@ class SerialToNet(serial.threaded.Protocol):
                     logger.info('DDL event %s http post notify to url %s' % (event_type,post_url))
                 else:
                     logger.warning('DDL event %s http post fail with url %s' % (event_type,post_url))
+            else:
+                logger.warning('unhandle data frame %s' % data_hex)
 
 def sck_cmd_handler(ser, cmd):
     data = []
