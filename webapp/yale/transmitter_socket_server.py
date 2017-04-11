@@ -152,7 +152,9 @@ def sck_cmd_handler(ser, cmd):
         data_hex = ','.join('{:02x}'.format(x) for x in data)
         logger.debug('send yale command %s' % data_hex)
         ser.write(data)
-
+        return True
+    else:
+        return False
     
 
 if __name__ == '__main__':  # noqa
@@ -316,10 +318,11 @@ it waits for the next connect.
                         if not data:
                             break
                         else:
-                            sck_cmd_handler(ser,data)
-                            ser_to_net.socket.sendall('OK\r\n')
-                            #-> disconnect
-                            #break
+                            if sck_cmd_handler(ser,data):
+                                ser_to_net.socket.sendall('OK\r\n')
+                            else:
+                                #-> disconnect
+                                break
                     except socket.error as msg:
                         if args.develop:
                             raise
