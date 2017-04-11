@@ -134,6 +134,7 @@ class SerialToNet(serial.threaded.Protocol):
 
 def sck_cmd_handler(ser, cmd):
     data = []
+    cmd = cmd.replace('\r\n','')
     if not ser is None: 
         if cmd.lower().find('lock') == 0:
             logger.info('recv HA cmd: lock')
@@ -316,12 +317,9 @@ it waits for the next connect.
                             break
                         else:
                             sck_cmd_handler(ser,data)
-#                         if data == '\r\n':
-#                             logger.debug('send door status check command\n')
-#                             data = bytearray([0x05,0x91,0x01,0x11,0x81,0x0f])                             
-#                             data_hex = ','.join('{:02x}'.format(x) for x in data)
-#                             logger.debug('client_socket.recv: %s\n' % data_hex)
-#                             ser.write(data)                 # get a bunch of bytes and send them
+                            ser_to_net.socket.sendall('OK\r\n')
+                            #-> disconnect
+                            #break
                     except socket.error as msg:
                         if args.develop:
                             raise
