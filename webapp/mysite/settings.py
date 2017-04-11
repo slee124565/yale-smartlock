@@ -118,3 +118,97 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+LOGGING_ROOT = '/var/log/yalesmartlock'
+LOGGING = {
+    'version': 1,              
+    'disable_existing_loggers': False,  # this fixes the problem
+
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "standard",
+            "stream": "ext://sys.stdout"
+        },
+        'default': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGGING_ROOT,'smartmirror.log'),
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },  
+        'request_handler': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGGING_ROOT,'django_request.log'),
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },
+        'yale_transmitter': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGGING_ROOT,'yale_transmitter.log'),
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG'
+    },
+#     'loggers': {
+#         'yale': {
+#             'handlers': ['console','default'],
+#             'level': 'DEBUG',
+#             'propagate': False
+#         },
+#         'yale.transmitter_socket_server': {
+#             'handlers': ['yale_transmitter'],
+#             'level': 'DEBUG',
+#             'propagate': False
+#         },
+#         'django.request': {
+#             'handlers': ['request_handler'],
+#             'level': 'DEBUG',
+#             'propagate': False
+#         },
+#     }
+}
+
+import sys
+sys_platform = sys.platform
+if sys_platform.find('linux') >= 0:
+    if not os.path.exists(LOGGING_ROOT):
+        os.mkdir(LOGGING_ROOT)
+        
+    LOGGING['loggers'] = {
+        'yale': {
+            'handlers': ['console','default'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'yale.transmitter_socket_server': {
+            'handlers': ['yale_transmitter'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'django.request': {
+            'handlers': ['request_handler'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+    }
+        
+else:
+    # default root logger console output
+    pass
+
