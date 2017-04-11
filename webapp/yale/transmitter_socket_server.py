@@ -28,9 +28,6 @@ YALE_DATA_UNLOCK_BY_IBUTTON     = [0x05,0x19,0x81,0x22]
 YALE_DATA_UNLOCK_BY_FINGERPRINT = [0x05,0x19,0x81,0x23]
 YALE_DATA_UNLOCK_BY_CARD        = [0x05,0x19,0x81,0x24]
 
-YALE_STATE_LOCKED               = [0x05,0x19,0x01,0x11]
-YALE_STATE_UNLOCKED             = [0x05,0x19,0x01,0x12]
-
 YALE_DATA_ALARM_INTRUDER        = [0x05,0x19,0x82,0x11]
 YALE_DATA_ALARM_DAMAGE          = [0x05,0x19,0x82,0x12]
 YALE_DATA_ALARM_FIRE            = [0x05,0x19,0x82,0x13]
@@ -38,6 +35,12 @@ YALE_DATA_ALARM_FIRE            = [0x05,0x19,0x82,0x13]
 YALE_CMD_STATUS                 = [0x05,0x91,0x01,0x11,0x81,0x0f]
 YALE_CMD_UNLOCK                 = [0x05,0x91,0x02,0x11,0x82,0x0f]
 YALE_CMD_LOCK                   = [0x05,0x91,0x02,0x12,0x81,0x0f]
+
+YALE_STATE_LOCKED               = [0x05,0x19,0x01,0x11]
+YALE_STATE_UNLOCKED             = [0x05,0x19,0x01,0x12]
+
+YALE_STATE_UNLOCK_RESP          = [0x05,0x19,0x02,0x11]
+YALE_STATE_LOCK_RESP            = [0x05,0x19,0x02,0x12]
 
 class SerialToNet(serial.threaded.Protocol):
     """serial->socket"""
@@ -105,12 +108,14 @@ class SerialToNet(serial.threaded.Protocol):
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/fire'
                 event_type = 'alarm'
                 
-            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0:
+            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0 or \
+                cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
                 logger.info('DDL status => locked')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/locked'
                 event_type = 'status'
                 
-            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0:
+            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0 or \
+                cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
                 logger.info('DDL status => unlocked')
                 post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
                 event_type = 'status'
