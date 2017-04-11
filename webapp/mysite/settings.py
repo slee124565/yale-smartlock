@@ -166,7 +166,7 @@ if sys_platform.find('linux') >= 0:
     if not os.path.exists(LOGGING_ROOT):
         os.mkdir(LOGGING_ROOT)
         
-    LOGGING['handler'] = {
+    LOGGING['handlers'] = {
         "console": {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
