@@ -55,15 +55,11 @@ class SerialToNet(serial.threaded.Protocol):
         return self
 
     def data_received(self, data):
-        if self.socket is not None:
-            for x in data:
-                self.buff.append(ord(x))
-                if ord(x) == 0x0f:
-                    self.process_data_frame(self.buff)
-                    self.buff = []
-            #data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
-            #logger.debug('data_received hex string %s\n' % data_hex)
-            #self.socket.sendall(data)
+        for x in data:
+            self.buff.append(ord(x))
+            if ord(x) == 0x0f:
+                self.process_data_frame(self.buff)
+                self.buff = []
     
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
