@@ -166,24 +166,6 @@ if sys_platform.find('linux') >= 0:
     if not os.path.exists(LOGGING_ROOT):
         os.mkdir(LOGGING_ROOT)
         
-    LOGGING['loggers'] = {
-        'yale': {
-            'handlers': ['console','default'],
-            'level': 'DEBUG',
-            'propagate': False
-        },
-        'yale.transmitter_socket_server': {
-            'handlers': ['yale_transmitter'],
-            'level': 'DEBUG',
-            'propagate': False
-        },
-        'django.request': {
-            'handlers': ['request_handler'],
-            'level': 'DEBUG',
-            'propagate': False
-        },
-    }
-    
     LOGGING['handler'] = {
         "console": {
             "class": "logging.StreamHandler",
@@ -216,6 +198,25 @@ if sys_platform.find('linux') >= 0:
             'formatter':'standard',
         }
     }
+
+    LOGGING['loggers'] = {
+        'yale': {
+            'handlers': ['console','default'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'yale.transmitter_socket_server': {
+            'handlers': ['yale_transmitter'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'django.request': {
+            'handlers': ['request_handler'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+    }
+    
         
 else:
     # default root logger console output
