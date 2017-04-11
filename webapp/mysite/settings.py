@@ -139,7 +139,7 @@ LOGGING = {
         'default': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOGGING_ROOT,'smartmirror.log'),
+            'filename': os.path.join(LOGGING_ROOT,'yale_smartlock.log'),
             'maxBytes': 1024*1024*5, # 5 MB
             'backupCount': 5,
             'formatter':'standard',
@@ -212,3 +212,4 @@ else:
     # default root logger console output
     pass
 
+YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = 'http://127.0.0.1:8000/'

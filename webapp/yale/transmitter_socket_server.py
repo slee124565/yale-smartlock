@@ -21,11 +21,29 @@ import serial
 import serial.rs485
 import serial.threaded
 import time
+import requests
 
+YALE_DATA_UNLOCK_BY_PIN         = [0x05,0x19,0x81,0x11]
+YALE_DATA_UNLOCK_BY_IBUTTON     = [0x05,0x19,0x81,0x22]
+YALE_DATA_UNLOCK_BY_FINGERPRINT = [0x05,0x19,0x81,0x23]
+YALE_DATA_UNLOCK_BY_CARD        = [0x05,0x19,0x81,0x24]
+
+YALE_STATE_LOCKED               = [0x05,0x19,0x01,0x11]
+YALE_STATE_UNLOCKED             = [0x05,0x19,0x01,0x12]
+
+YALE_DATA_ALARM_INTRUDER        = [0x05,0x19,0x82,0x11]
+YALE_DATA_ALARM_DAMAGE          = [0x05,0x19,0x82,0x12]
+YALE_DATA_ALARM_FIRE            = [0x05,0x19,0x82,0x13]
+
+YALE_CMD_STATUS                 = [0x05,0x91,0x01,0x11,0x81,0x0f]
+YALE_CMD_UNLOCK                 = [0x05,0x91,0x02,0x11,0x82,0x0f]
+YALE_CMD_LOCK                   = [0x05,0x91,0x02,0x12,0x81,0x0f]
 
 class SerialToNet(serial.threaded.Protocol):
     """serial->socket"""
 
+    buff = []
+    
     def __init__(self):
         self.socket = None
 
@@ -34,10 +52,97 @@ class SerialToNet(serial.threaded.Protocol):
 
     def data_received(self, data):
         if self.socket is not None:
-            data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
-            logger.debug('data_received hex string %s\n' % data_hex)
+            for x in data:
+                self.buff.append(ord(x))
+                if ord(x) == 0x0f:
+                    self.process_data_frame(self.buff)
+                    self.buff = []
+            #data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
+            #logger.debug('data_received hex string %s\n' % data_hex)
             #self.socket.sendall(data)
+    
+    def process_data_frame(self,data_frame):
+        data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
+        logger.info('recv data frame: %s' % data_hex)
+        if len(data_frame) < 6:
+            logger.warning('data frame length invalid, ignore')
+        else:
+            post_url = ''
+            event_type = ''
+            
+            if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_PIN)],YALE_DATA_UNLOCK_BY_PIN) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/pin'
+                event_type = 'unlock'
+                
+            if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/ibutton'
+                event_type = 'unlock'
 
+            if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/fingerprint'
+                event_type = 'unlock'
+
+            if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/card'
+                event_type = 'unlock'
+
+            if cmp(data_frame[:len(YALE_DATA_ALARM_INTRUDER)],YALE_DATA_ALARM_INTRUDER) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/intruder'
+                event_type = 'alarm'
+
+            if cmp(data_frame[:len(YALE_DATA_ALARM_DAMAGE)],YALE_DATA_ALARM_DAMAGE) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/damage'
+                event_type = 'alarm'
+
+            if cmp(data_frame[:len(YALE_DATA_ALARM_FIRE)],YALE_DATA_ALARM_FIRE) == 0:
+                logger.info('DDL event => unlock by pin code')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/fire'
+                event_type = 'alarm'
+                
+            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0:
+                logger.info('DDL status => locked')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/locked'
+                event_type = 'status'
+                
+            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0:
+                logger.info('DDL status => unlocked')
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                event_type = 'status'
+                
+            if post_url != '':
+                r = requests.get(post_url)
+                if r.status_code == 200:
+                    logger.info('DDL event %s http post notify to url %s' % (event_type,post_url))
+                else:
+                    logger.warning('DDL event %s http post fail with url %s' % (event_type,post_url))
+
+def sck_cmd_handler(ser, cmd):
+    data = []
+    if not ser is None: 
+        if cmd.lower().find('lock') == 0:
+            logger.info('recv HA cmd: lock')
+            data = bytearray(YALE_CMD_LOCK)
+        elif cmd.lower().find('unlock') == 0:
+            logger.info('recv HA cmd: unlock')
+            data = bytearray(YALE_CMD_UNLOCK)
+        elif cmd.lower().find('status') == 0:
+            logger.info('recv HA cmd: status check')
+            data = bytearray(YALE_CMD_STATUS)
+        else:
+            logger.warning('recv HA cmd unkown: %s, ignore' % cmd)
+    
+    if len(data) > 0:
+        data_hex = ','.join('{:02x}'.format(x) for x in data)
+        logger.debug('send yale command %s' % data_hex)
+        ser.write(data)
+
+    
 
 if __name__ == '__main__':  # noqa
     import argparse
@@ -199,12 +304,14 @@ it waits for the next connect.
                         data = client_socket.recv(1024)
                         if not data:
                             break
-                        if data == '\r\n':
-                            logger.debug('send door status check command\n')
-                            data = bytearray([0x05,0x91,0x01,0x11,0x81,0x0f])                             
-                            data_hex = ','.join('{:02x}'.format(x) for x in data)
-                            logger.debug('client_socket.recv: %s\n' % data_hex)
-                            ser.write(data)                 # get a bunch of bytes and send them
+                        else:
+                            sck_cmd_handler(ser,data)
+#                         if data == '\r\n':
+#                             logger.debug('send door status check command\n')
+#                             data = bytearray([0x05,0x91,0x01,0x11,0x81,0x0f])                             
+#                             data_hex = ','.join('{:02x}'.format(x) for x in data)
+#                             logger.debug('client_socket.recv: %s\n' % data_hex)
+#                             ser.write(data)                 # get a bunch of bytes and send them
                     except socket.error as msg:
                         if args.develop:
                             raise
