@@ -331,7 +331,7 @@ it waits for the next connect.
                     continue
                 logger.info('Connected\n')
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                #~ client_socket.settimeout(5)
+                #~ client_socket.settimeout(15)
             else:
                 logger.info('Waiting for connection on {}...\n'.format(args.localport))
                 client_socket, addr = srv.accept()
@@ -350,7 +350,7 @@ it waits for the next connect.
                 # enter network <-> serial loop
                 while True:
                     try:
-                        client_socket.settimeout(10)
+                        client_socket.settimeout(15)
                         data = client_socket.recv(1024)
                         if not data:
                             break
