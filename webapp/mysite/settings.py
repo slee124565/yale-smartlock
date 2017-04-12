@@ -222,5 +222,5 @@ else:
     # default root logger console output
     pass
 
-YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = 'http://127.0.0.1:8000/yale/'
+YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = 'http://127.0.0.1:9000/yale/'
 YALE_EVENT_HTTP_POST_SIRI_MODE = True

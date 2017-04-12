@@ -60,14 +60,11 @@ class SerialToNet(serial.threaded.Protocol):
             if ord(x) == 0x0f:
                 evt_name = self.process_data_frame(self.buff)
                 self.buff = []
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
-                    pass
-                else:
-                    if evt_name == '':
-                        evt_name = 'unknown'
-                    if not self.socket is None:
-                        self.socket.sendall(evt_name)
-                        logger.info('feedback serial event %s' % evt_name)
+                if evt_name == '':
+                    evt_name = 'unknown'
+                if not self.socket is None:
+                    self.socket.sendall(evt_name)
+                    logger.info('feedback serial event %s' % evt_name)
     
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
