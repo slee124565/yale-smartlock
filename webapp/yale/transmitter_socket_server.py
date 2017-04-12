@@ -58,100 +58,113 @@ class SerialToNet(serial.threaded.Protocol):
         for x in data:
             self.buff.append(ord(x))
             if ord(x) == 0x0f:
-                self.process_data_frame(self.buff)
+                evt_name = self.process_data_frame(self.buff)
                 self.buff = []
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    pass
+                else:
+                    if evt_name == '':
+                        evt_name = 'unknown'
+                    if not self.socket is None:
+                        self.socket.sendall(evt_name)
+                        logger.info('feedback serial event %s' % evt_name)
     
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
         logger.debug('recv data frame: %s' % data_hex)
+        evt_name = ''
         if len(data_frame) < 6:
             logger.warning('data frame length invalid, ignore')
         else:
             post_url = ''
-            event_type = ''
             
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_PIN)],YALE_DATA_UNLOCK_BY_PIN) == 0:
                 logger.info('DDL event => unlock by pin code')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'status/unlocked'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/pin'
-                event_type = 'unlock'
+                    evt_name = 'unlock/pin'
                 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
                 logger.info('DDL event => unlock by ibutton')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'status/unlocked'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/ibutton'
-                event_type = 'unlock'
+                    evt_name = 'unlock/ibutton'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
                 logger.info('DDL event => unlock by fingerprint')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'status/unlocked'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/fingerprint'
-                event_type = 'unlock'
+                    evt_name = 'status/fingerprint'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
                 logger.info('DDL event => unlock by card')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'status/unlocked'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/card'
-                event_type = 'unlock'
+                    evt_name = 'status/card'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_INTRUDER)],YALE_DATA_ALARM_INTRUDER) == 0:
                 logger.info('DDL event => intruder alarm')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'alarm'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/intruder'
-                event_type = 'alarm'
+                    evt_name = 'alarm/intruder'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_DAMAGE)],YALE_DATA_ALARM_DAMAGE) == 0:
                 logger.info('DDL event => damage alarm')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'alarm'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/damage'
-                event_type = 'alarm'
+                    evt_name = 'alarm/damage'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_FIRE)],YALE_DATA_ALARM_FIRE) == 0:
                 logger.info('DDL event => fire alarm')
-                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'alarm'
                 else:
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/fire'
-                event_type = 'alarm'
+                    evt_name = 'alarm/fire'
                 
             if cmp(data_frame[:len(YALE_DATA_ALARM_CLEAR)],YALE_DATA_ALARM_CLEAR) == 0:
                 logger.info('DDL event => alarm clear')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm_clear'
-                event_type = 'alarm'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'alarm_clear'
+                else:
+                    evt_name = 'alarm_clear'
                 
                 
             if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0 or \
                 cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
                 logger.info('DDL status => locked')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/locked'
-                event_type = 'status'
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'status/locked'
+                else:
+                    evt_name = 'status/locked'
                 
             if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0 or \
                 cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
                 logger.info('DDL status => unlocked')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
-                event_type = 'status'
-                
-            if post_url != '':
-                r = requests.get(post_url)
-                if r.status_code == 200:
-                    logger.info('DDL event %s http post notify to url %s' % (event_type,post_url))
+                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                    evt_name = 'status/unlocked'
                 else:
-                    logger.warning('DDL event %s http post fail with url %s' % (event_type,post_url))
-            else:
-                logger.warning('unhandle data frame %s' % data_hex)
+                    evt_name = 'status/unlocked'
+            
+            if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if evt_name != '':
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
+                    r = requests.get(post_url)
+                    if r.status_code == 200:
+                        logger.info('DDL event %s http post notify to url %s' % (evt_name,post_url))
+                    else:
+                        logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
+                else:
+                    logger.warning('unhandle data frame %s' % data_hex)
+
+        return evt_name
+                
+                
 
 def sck_cmd_handler(ser, cmd):
     data = []
@@ -340,9 +353,11 @@ it waits for the next connect.
                             break
                         else:
                             if sck_cmd_handler(ser,data):
-                                ser_to_net.socket.sendall('OK\r\n')
+                                #-> cmd handle success
+                                pass
+                                #ser_to_net.socket.sendall('OK\r\n')
                             else:
-                                #-> disconnect
+                                #-> cmd handle fail, disconnect
                                 break
                     except socket.error as msg:
                         if args.develop:
