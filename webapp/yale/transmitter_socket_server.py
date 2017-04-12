@@ -72,42 +72,63 @@ class SerialToNet(serial.threaded.Protocol):
             
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_PIN)],YALE_DATA_UNLOCK_BY_PIN) == 0:
                 logger.info('DDL event => unlock by pin code')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/pin'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/pin'
                 event_type = 'unlock'
                 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
                 logger.info('DDL event => unlock by ibutton')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/ibutton'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/ibutton'
                 event_type = 'unlock'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
                 logger.info('DDL event => unlock by fingerprint')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/fingerprint'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/fingerprint'
                 event_type = 'unlock'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
                 logger.info('DDL event => unlock by card')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/card'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'status/unlocked'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'unlock/card'
                 event_type = 'unlock'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_INTRUDER)],YALE_DATA_ALARM_INTRUDER) == 0:
                 logger.info('DDL event => intruder alarm')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/intruder'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/intruder'
                 event_type = 'alarm'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_DAMAGE)],YALE_DATA_ALARM_DAMAGE) == 0:
                 logger.info('DDL event => damage alarm')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/damage'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/damage'
                 event_type = 'alarm'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_FIRE)],YALE_DATA_ALARM_FIRE) == 0:
                 logger.info('DDL event => fire alarm')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/fire'
+                if settings.YALE_EVENT_HTTP_POST_SIMPLE_MODE:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm'
+                else:
+                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/fire'
                 event_type = 'alarm'
                 
             if cmp(data_frame[:len(YALE_DATA_ALARM_CLEAR)],YALE_DATA_ALARM_CLEAR) == 0:
                 logger.info('DDL event => alarm clear')
-                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm/clear'
+                post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + 'alarm_clear'
                 event_type = 'alarm'
                 
                 
