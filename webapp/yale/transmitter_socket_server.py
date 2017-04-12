@@ -167,8 +167,9 @@ class SerialToNet(serial.threaded.Protocol):
                 
 
 def sck_cmd_handler(ser, cmd):
-    data = []
+    data = []    
     cmd = cmd.replace('\r\n','')
+    logger.debug('sck_cmd_handler: %s' % cmd)
     if not ser is None: 
         if cmd.lower().find('lock') == 0:
             logger.info('recv HA cmd: lock')
@@ -188,6 +189,7 @@ def sck_cmd_handler(ser, cmd):
         ser.write(data)
         return True
     else:
+        logger.debug('no data for serial port')
         return False
     
 
