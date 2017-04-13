@@ -53,6 +53,12 @@ class SerialToNet(serial.threaded.Protocol):
 
     def __call__(self):
         return self
+    
+    def connection_made(self, transport):
+        logger.warning('serial connect mad %s' % str(transport))
+        
+    def connection_lost(self, exc):
+        logger.warning('serial connect lost %s' % str(exc))
 
     def data_received(self, data):
         for x in data:
