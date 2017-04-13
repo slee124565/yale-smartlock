@@ -50,6 +50,7 @@ class SerialToNet(serial.threaded.Protocol):
     
     def __init__(self):
         self.socket = None
+        self.buff = []
 
     def __call__(self):
         return self
@@ -61,10 +62,14 @@ class SerialToNet(serial.threaded.Protocol):
         logger.debug('serial connect lost %s' % str(exc))
 
     def data_received(self, data):
+        data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
+        logger.debug('serial recv %s' % data_hex)
         for x in data:
-            self.buff.append(ord(x))
+            if ord(x) != 0x00:
+                self.buff.append(ord(x))
             if ord(x) == 0x0f:
                 evt_name = self.process_data_frame(self.buff)
+                self.data_frame_resp(self.buff)
                 self.buff = []
                 if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
                     pass
@@ -75,6 +80,19 @@ class SerialToNet(serial.threaded.Protocol):
                         self.socket.sendall(evt_name)
                         logger.debug('feedback serial event %s' % evt_name)
     
+    def data_frame_resp(self, data_frame):
+        if data_frame[0] == 0x05 and data_frame[-1] == 0x0d:
+            data_frame[1] = 0x91
+            check = 0
+            for x in data_frame[1:-1]:
+                check ^= x
+            data_frame[-2] = check
+            data_hex = ','.join('{:0x2}'.format(x) for x in data_frame)
+            logger.debug('data_frame_resp: %s' % data_hex)
+            self.write(bytearray(data_frame))
+        else:
+            logger.warning('data_frame is invalid')
+            
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
         logger.debug('recv data frame: %s' % data_hex)
