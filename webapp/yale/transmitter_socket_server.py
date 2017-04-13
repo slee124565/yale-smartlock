@@ -80,7 +80,7 @@ class SerialToNet(serial.threaded.Protocol):
                         logger.debug('feedback serial event %s' % evt_name)
     
     def data_frame_resp(self, data_frame):
-        logger.debug('data_frame_resp ...')
+        logger.debug('data_frame_resp ... %s' % str(data_frame))
         resp_data = list(data_frame)
         if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
             resp_data[1] = 0x91
