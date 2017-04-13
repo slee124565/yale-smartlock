@@ -90,7 +90,7 @@ class SerialToNet(serial.threaded.Protocol):
             resp_data[-2] = check
             data_hex = ','.join('{:0x2}'.format(x) for x in resp_data)
             logger.debug('resp data frame: %s' % data_hex)
-            self.write(bytearray(resp_data))
+            #self.write(bytearray(resp_data))
         else:
             logger.warning('data_frame is invalid')
             
@@ -380,6 +380,7 @@ it waits for the next connect.
                 ser_to_net = SerialToNet()
                 serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
                 serial_worker.start()
+                sck_cmd_handler(ser,'status')
 
                 ser_to_net.socket = client_socket
                 # enter network <-> serial loop
