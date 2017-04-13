@@ -51,15 +51,18 @@ class SerialToNet(serial.threaded.Protocol):
     def __init__(self):
         self.socket = None
         self.buff = []
+        self.connected = False
 
     def __call__(self):
         return self
     
     def connection_made(self, transport):
         logger.debug('serial connect made')
+        self.connected = True
         
     def connection_lost(self, exc):
-        logger.debug('serial connect lost: %s' % str(exc))
+        logger.warning('serial connect lost: %s' % str(exc))
+        self.connected = False
 
     def data_received(self, data):
         data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
@@ -379,13 +382,16 @@ it waits for the next connect.
                         if not data:
                             break
                         else:
-                            if sck_cmd_handler(ser,data):
-                                #-> cmd handle success
-                                pass
-                                #ser_to_net.socket.sendall('OK\r\n')
+                            if ser_to_net.connected:
+                                if sck_cmd_handler(ser,data):
+                                    #-> cmd handle success
+                                    pass
+                                    #ser_to_net.socket.sendall('OK\r\n')
+                                else:
+                                    #-> cmd handle fail, disconnect
+                                    break
                             else:
-                                #-> cmd handle fail, disconnect
-                                break
+                                raise
                     except socket.timeout:
                         logger.debug('sck recv timeout, no cmd, send status cmd')
                         sck_cmd_handler(ser,'status')
