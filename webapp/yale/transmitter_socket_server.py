@@ -402,6 +402,10 @@ it waits for the next connect.
                         logger.error('ERROR: {}\n'.format(msg))
                         # probably got disconnected
                         break
+                    finally:
+                        if not ser_to_net.connected:
+                            logger.debug('raise serial connect fail exception')
+                            break
             except KeyboardInterrupt:
                 intentional_exit = True
                 raise
