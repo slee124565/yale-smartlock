@@ -69,7 +69,7 @@ class SerialToNet(serial.threaded.Protocol):
             if ord(x) == 0x0f:
                 evt_name = self.process_data_frame(self.buff)
                 #self.data_frame_resp(self.buff)
-                resp_data = list(self.buff)
+                resp_data = [x for x in self.buff]
                 if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
                     resp_data[1] = 0x91
                     check = 0
