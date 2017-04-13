@@ -68,45 +68,20 @@ class SerialToNet(serial.threaded.Protocol):
             self.buff.append(ord(x))
             if ord(x) == 0x0f:
                 evt_name = self.process_data_frame(self.buff)
-                #self.data_frame_resp(self.buff)
-                resp_data = [x for x in self.buff]
-                if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
-                    resp_data[1] = 0x91
-                    check = 0
-                    for x in resp_data[1:-1]:
-                        check ^= x
-                    resp_data[-2] = check
-                    data_hex = ','.join('{:0x2}'.format(x) for x in resp_data)
-                    logger.debug('resp data frame: %s' % data_hex)
-                    #self.write(bytearray(resp_data))
-                else:
-                    logger.warning('data_frame is invalid')
-                    
                 self.buff = []
+                
+                if evt_name == '':
+                    evt_name = 'unknown'
+                    logger.warning('unknown event, raise exception')
+                    raise
+                    
                 if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
                     pass
                 else:
-                    if evt_name == '':
-                        evt_name = 'unknown'
                     if not self.socket is None:
                         self.socket.sendall(evt_name)
                         logger.debug('feedback serial event %s' % evt_name)
     
-    def data_frame_resp(self, data_frame):
-        logger.debug('data_frame_resp ... %s' % str(data_frame))
-        resp_data = list(data_frame)
-        if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
-            resp_data[1] = 0x91
-            check = 0
-            for x in resp_data[1:-1]:
-                check ^= x
-            resp_data[-2] = check
-            data_hex = ','.join('{:0x2}'.format(x) for x in resp_data)
-            logger.debug('resp data frame: %s' % data_hex)
-            #self.write(bytearray(resp_data))
-        else:
-            logger.warning('data_frame is invalid')
-            
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
         logger.debug('recv data frame: %s' % data_hex)
