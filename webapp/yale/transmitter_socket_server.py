@@ -68,7 +68,20 @@ class SerialToNet(serial.threaded.Protocol):
             self.buff.append(ord(x))
             if ord(x) == 0x0f:
                 evt_name = self.process_data_frame(self.buff)
-                self.data_frame_resp(self.buff)
+                #self.data_frame_resp(self.buff)
+                resp_data = list(self.buff)
+                if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
+                    resp_data[1] = 0x91
+                    check = 0
+                    for x in resp_data[1:-1]:
+                        check ^= x
+                    resp_data[-2] = check
+                    data_hex = ','.join('{:0x2}'.format(x) for x in resp_data)
+                    logger.debug('resp data frame: %s' % data_hex)
+                    #self.write(bytearray(resp_data))
+                else:
+                    logger.warning('data_frame is invalid')
+                    
                 self.buff = []
                 if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
                     pass
