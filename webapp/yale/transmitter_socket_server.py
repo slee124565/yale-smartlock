@@ -307,15 +307,15 @@ it waits for the next connect.
             '--- TCP/IP to Serial redirect on {p.name}  {p.baudrate},{p.bytesize},{p.parity},{p.stopbits} ---\n'
             '--- type Ctrl-C / BREAK to quit\n'.format(p=ser))
 
-    try:
-        ser.open()
-    except serial.SerialException as e:
-        logger.error('Could not open serial port {}: {}\n'.format(ser.name, e))
-        sys.exit(1)
-
-    ser_to_net = SerialToNet()
-    serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
-    serial_worker.start()
+#     try:
+#         ser.open()
+#     except serial.SerialException as e:
+#         logger.error('Could not open serial port {}: {}\n'.format(ser.name, e))
+#         sys.exit(1)
+# 
+#     ser_to_net = SerialToNet()
+#     serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
+#     serial_worker.start()
 
     if not args.client:
         srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -352,6 +352,16 @@ it waits for the next connect.
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
+                try:
+                    ser.open()
+                except serial.SerialException as e:
+                    logger.error('Could not open serial port {}: {}\n'.format(ser.name, e))
+                    sys.exit(1)
+            
+                ser_to_net = SerialToNet()
+                serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
+                serial_worker.start()
+
                 ser_to_net.socket = client_socket
                 # enter network <-> serial loop
                 while True:
@@ -376,6 +386,8 @@ it waits for the next connect.
                             raise
                         logger.error('ERROR: {}\n'.format(msg))
                         # probably got disconnected
+                        logger.debug('close serial_worker thread')
+                        serial_worker.close()
                         break
             except KeyboardInterrupt:
                 intentional_exit = True
