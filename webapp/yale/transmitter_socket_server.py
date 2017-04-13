@@ -65,8 +65,7 @@ class SerialToNet(serial.threaded.Protocol):
         data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
         logger.debug('serial recv %s' % data_hex)
         for x in data:
-            if ord(x) != 0x00:
-                self.buff.append(ord(x))
+            self.buff.append(ord(x))
             if ord(x) == 0x0f:
                 evt_name = self.process_data_frame(self.buff)
                 self.data_frame_resp(self.buff)
@@ -81,15 +80,16 @@ class SerialToNet(serial.threaded.Protocol):
                         logger.debug('feedback serial event %s' % evt_name)
     
     def data_frame_resp(self, data_frame):
-        if data_frame[0] == 0x05 and data_frame[-1] == 0x0d:
-            data_frame[1] = 0x91
+        resp_data = list(data_frame)
+        if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
+            resp_data[1] = 0x91
             check = 0
-            for x in data_frame[1:-1]:
+            for x in resp_data[1:-1]:
                 check ^= x
-            data_frame[-2] = check
-            data_hex = ','.join('{:0x2}'.format(x) for x in data_frame)
+            resp_data[-2] = check
+            data_hex = ','.join('{:0x2}'.format(x) for x in resp_data)
             logger.debug('data_frame_resp: %s' % data_hex)
-            self.write(bytearray(data_frame))
+            self.write(bytearray(resp_data))
         else:
             logger.warning('data_frame is invalid')
             
