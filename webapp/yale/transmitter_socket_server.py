@@ -56,10 +56,10 @@ class SerialToNet(serial.threaded.Protocol):
         return self
     
     def connection_made(self, transport):
-        logger.debug('serial connect mad %s' % str(transport))
+        logger.debug('serial connect made')
         
     def connection_lost(self, exc):
-        logger.debug('serial connect lost %s' % str(exc))
+        logger.debug('serial connect lost: %s' % str(exc))
 
     def data_received(self, data):
         data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
@@ -80,6 +80,7 @@ class SerialToNet(serial.threaded.Protocol):
                         logger.debug('feedback serial event %s' % evt_name)
     
     def data_frame_resp(self, data_frame):
+        logger.debug('data_frame_resp ...')
         resp_data = list(data_frame)
         if resp_data[0] == 0x05 and resp_data[-1] == 0x0f:
             resp_data[1] = 0x91
@@ -88,7 +89,7 @@ class SerialToNet(serial.threaded.Protocol):
                 check ^= x
             resp_data[-2] = check
             data_hex = ','.join('{:0x2}'.format(x) for x in resp_data)
-            logger.debug('data_frame_resp: %s' % data_hex)
+            logger.debug('resp data frame: %s' % data_hex)
             self.write(bytearray(resp_data))
         else:
             logger.warning('data_frame is invalid')
