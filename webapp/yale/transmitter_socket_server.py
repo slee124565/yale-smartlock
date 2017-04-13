@@ -404,7 +404,7 @@ it waits for the next connect.
                         break
                     finally:
                         if not ser_to_net.connected:
-                            logger.debug('raise serial connect fail exception')
+                            logger.warning('serial port disconnect break')
                             break
             except KeyboardInterrupt:
                 intentional_exit = True
