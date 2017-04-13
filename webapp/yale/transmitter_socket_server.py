@@ -57,12 +57,12 @@ class SerialToNet(serial.threaded.Protocol):
         return self
     
     def connection_made(self, transport):
-        logger.debug('serial connect made')
         self.connected = True
+        logger.debug('serial connect made')
         
     def connection_lost(self, exc):
-        logger.warning('serial connect lost: %s' % str(exc))
         self.connected = False
+        logger.warning('serial connect lost: %s' % str(exc))
 
     def data_received(self, data):
         data_hex = ','.join('{:02x}'.format(ord(x)) for x in data)
@@ -76,7 +76,7 @@ class SerialToNet(serial.threaded.Protocol):
                 if evt_name == '':
                     evt_name = 'unknown'
                     logger.warning('unknown event, raise exception')
-                    raise
+                    raise Exception('unknown DDL event')
                     
                 if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
                     pass
@@ -391,7 +391,8 @@ it waits for the next connect.
                                     #-> cmd handle fail, disconnect
                                     break
                             else:
-                                raise
+                                logger.debug('raise serial connect fail exception')
+                                raise Exception('serial connection fail')
                     except socket.timeout:
                         logger.debug('sck recv timeout, no cmd, send status cmd')
                         sck_cmd_handler(ser,'status')
