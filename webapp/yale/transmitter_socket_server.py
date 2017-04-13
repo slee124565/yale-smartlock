@@ -386,8 +386,6 @@ it waits for the next connect.
                             raise
                         logger.error('ERROR: {}\n'.format(msg))
                         # probably got disconnected
-                        logger.debug('close serial_worker thread')
-                        serial_worker.close()
                         break
             except KeyboardInterrupt:
                 intentional_exit = True
@@ -400,6 +398,7 @@ it waits for the next connect.
                 ser_to_net.socket = None
                 logger.info('Disconnected\n')
                 client_socket.close()
+                serial_worker.close()
                 if args.client and not intentional_exit:
                     time.sleep(5)  # intentional delay on reconnection as client
     except KeyboardInterrupt:
