@@ -40,10 +40,16 @@ YALE_STATE_LOCK_RESP            = [0x05,0x19,0x02,0x12]
 
 class SerialQueueThread(threading.Thread):
     
-    def __init__(self):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
+        threading.Thread.__init__(self, group=group, target=target, name=name,
+                                  verbose=verbose)
+        self.args = args
+        self.kwargs = kwargs
         self.queue = None
         self.ser = None
         self.thread_exist = False
+        return
     
     def run(self):
         while not self.thread_exist and not self.queue:
