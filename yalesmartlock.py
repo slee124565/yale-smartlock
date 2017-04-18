@@ -2,7 +2,7 @@
 
 import sys
 import os,django
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__),'webapp'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'mysite.settings'
 django.setup()
 from django.conf import settings

@@ -2,5 +2,5 @@
 
 source /usr/share/smirror/bin/activate
 cd /usr/share/yalesmartlock/webapp
-python yale/transmitter_socket_server.py /dev/ttyUSB0
+python yale/transmitter_socket_server.py /dev/ttyUSB1
 
