@@ -52,8 +52,8 @@ class SerialQueueThread(threading.Thread):
         return
     
     def run(self):
-        logger.debug('serial queue thread running...')
-        while True:
+        logger.debug('serial queue thread (daemon: %s) running ...' % self.daemon)
+        while not self.thread_exist:
             cmd = ''
             try:
                 cmd = self.queue.get(timeout=1)
