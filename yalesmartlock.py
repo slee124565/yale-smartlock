@@ -162,16 +162,16 @@ class SerialToNet(serial.threaded.Protocol):
             
             logger.debug('parse received data event: %s' % evt_name)
             
-            if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
-                if evt_name != '':
-                    post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
-                    r = requests.get(post_url)
-                    if r.status_code == 200:
-                        logger.info('DDL event %s http post notify to url %s' % (evt_name,post_url))
-                    else:
-                        logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
-                else:
-                    logger.warning('unhandle data frame %s' % data_hex)
+#             if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+#                 if evt_name != '':
+#                     post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
+#                     r = requests.get(post_url)
+#                     if r.status_code == 200:
+#                         logger.info('DDL event %s http post notify to url %s' % (evt_name,post_url))
+#                     else:
+#                         logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
+#                 else:
+#                     logger.warning('unhandle data frame %s' % data_hex)
 
         return evt_name
 
