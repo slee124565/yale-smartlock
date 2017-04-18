@@ -48,12 +48,12 @@ class SerialQueueThread(threading.Thread):
         self.kwargs = kwargs
         self.queue = None
         self.ser = None
-        self.thread_exist = False
+        self.thread_exit = False
         return
     
     def run(self):
         logger.debug('serial queue thread (daemon: %s) running ...' % self.daemon)
-        while not self.thread_exist:
+        while not self.thread_exit:
             cmd = ''
             try:
                 cmd = self.queue.get(timeout=1)
@@ -83,6 +83,7 @@ class SerialQueueThread(threading.Thread):
             except Queue.Empty:
                 #logger.debug('serial cmd queue recv timeout')
                 pass
+        logger.debug('-- serial queue thread exit --')
     
 class SerialToNet(serial.threaded.Protocol):
     """serial->socket"""
@@ -442,6 +443,7 @@ it waits for the next connect.
         pass
 
     serial_worker.stop()
-    ser_q_worker.stop()
+    ser_q_worker.thread_exit = True;
+    ser_q_worker.join()
     
     sys.stderr.write('\n--- exit ---\n')
