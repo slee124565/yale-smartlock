@@ -52,7 +52,8 @@ class SerialQueueThread(threading.Thread):
         return
     
     def run(self):
-        while not self.thread_exist and not self.queue:
+        logger.debug('serial queue thread running...')
+        while True:
             cmd = ''
             try:
                 cmd = self.queue.get(timeout=1)
@@ -76,14 +77,12 @@ class SerialQueueThread(threading.Thread):
                         data_hex = ','.join('{:02x}'.format(x) for x in data)
                         logger.debug('send yale command %s' % data_hex)
                         ser.write(data)
-                        return True
                     else:
                         logger.debug('no data for serial port')
-                        return False
 
             except Queue.Empty:
-                logger.debug('serial cmd queue recv timeout')
-                
+                #logger.debug('serial cmd queue recv timeout')
+                pass
     
 class SerialToNet(serial.threaded.Protocol):
     """serial->socket"""
@@ -445,6 +444,4 @@ it waits for the next connect.
     serial_worker.stop()
     ser_q_worker.stop()
     
-    ser_q_worker.join()
-    serial_worker.join()
     sys.stderr.write('\n--- exit ---\n')
