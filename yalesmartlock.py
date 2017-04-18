@@ -14,6 +14,8 @@ import serial
 import serial.rs485
 import serial.threaded
 import time
+import threading
+import Queue
 import requests
 
 YALE_DATA_UNLOCK_BY_PIN         = [0x05,0x19,0x81,0x11]
@@ -36,6 +38,47 @@ YALE_STATE_UNLOCKED             = [0x05,0x19,0x01,0x12]
 YALE_STATE_UNLOCK_RESP          = [0x05,0x19,0x02,0x11]
 YALE_STATE_LOCK_RESP            = [0x05,0x19,0x02,0x12]
 
+class SerialQueueThread(threading.Thread):
+    
+    def __init__(self):
+        self.queue = None
+        self.ser = None
+        self.thread_exist = False
+    
+    def run(self):
+        while not self.thread_exist and not self.queue:
+            cmd = ''
+            try:
+                cmd = self.queue.get(timeout=1)
+                cmd = cmd.replace('\r\n','')
+                logger.debug('recv queue cmd: %s' % cmd)
+                if not self.ser is None:
+                    if cmd.lower().find('lock') == 0:
+                        logger.info('recv HA cmd: lock')
+                        data = bytearray(YALE_CMD_LOCK)
+                    elif cmd.lower().find('unlock') == 0:
+                        logger.info('recv HA cmd: unlock')
+                        data = bytearray(YALE_CMD_UNLOCK)
+                    elif cmd.lower().find('status') == 0:
+                        logger.info('recv HA cmd: status check')
+                        data = bytearray(YALE_CMD_STATUS)
+                    else:
+                        data = []
+                        logger.warning('recv HA cmd unkown: %s, ignore' % cmd)
+                    
+                    if len(data) > 0:
+                        data_hex = ','.join('{:02x}'.format(x) for x in data)
+                        logger.debug('send yale command %s' % data_hex)
+                        ser.write(data)
+                        return True
+                    else:
+                        logger.debug('no data for serial port')
+                        return False
+
+            except Queue.Empty:
+                logger.debug('serial cmd queue recv timeout')
+                
+    
 class SerialToNet(serial.threaded.Protocol):
     """serial->socket"""
 
@@ -311,10 +354,18 @@ it waits for the next connect.
     except serial.SerialException as e:
         logger.error('Could not open serial port {}: {}\n'.format(ser.name, e))
         sys.exit(1)
+        
+    # setup serial port command queue
+    q = Queue.Queue()
  
     ser_to_net = SerialToNet()
     serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
     serial_worker.start()
+    
+    ser_q_worker = SerialQueueThread()
+    ser_q_worker.ser = ser
+    ser_q_worker.queue = q
+    ser_q_worker.start()
 
     if not args.client:
         srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -359,7 +410,9 @@ it waits for the next connect.
                         data = client_socket.recv(1024)
                         if not data:
                             break
-                        sck_cmd_handler(ser,data)
+                        logger.debug('recv sck cmd: %s' % data)
+                        q.put(data)
+#                         sck_cmd_handler(ser,data)
 #                         ser.write(data)                 # get a bunch of bytes and send them
                     except socket.error as msg:
                         if args.develop:
@@ -383,5 +436,9 @@ it waits for the next connect.
     except KeyboardInterrupt:
         pass
 
-    sys.stderr.write('\n--- exit ---\n')
     serial_worker.stop()
+    ser_q_worker.stop()
+    
+    ser_q_worker.join()
+    serial_worker.join()
+    sys.stderr.write('\n--- exit ---\n')
