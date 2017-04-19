@@ -38,8 +38,58 @@ YALE_STATE_UNLOCKED             = [0x05,0x19,0x01,0x12]
 YALE_STATE_UNLOCK_RESP          = [0x05,0x19,0x02,0x11]
 YALE_STATE_LOCK_RESP            = [0x05,0x19,0x02,0x12]
 
-class SerialQueueThread(threading.Thread):
+class HBSocketServerThread(threading.Thread):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
+        threading.Thread.__init__(self, group=group, target=target, name=name,
+                                  verbose=verbose)
+        self.args = args
+        self.kwargs = kwargs
+        self.ser_queue = None
+        self.localport = 9001
+        self.thread_exit = False
+        return
     
+    def run(self):
+        logger.debug('HB Sck thread (daemon: %s) running ...' % self.daemon)
+
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(('', self.localport))
+        srv.listen(1)
+        
+        while True:
+            try:
+                logger.info('HB Sck Waiting for connection on {}...'.format(self.localport))
+                client_socket, addr = srv.accept()
+                logger.info('Connected by {}\n'.format(addr))
+                
+                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
+                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
+                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                client_socket.settimeout(3)
+    
+                cmd = client_socket.recv(1024)
+                if not cmd:
+                    logger.info('HB Sck recv homebridge cmd: %s' % cmd)
+                    self.ser_queue.put(cmd)
+            except socket.timeout:
+                logger.debug('HB Sck Timeout')
+            except socket.error as msg:
+                logger.error('HB Sck ERROR: {}'.format(msg))
+            finally:
+                if self.thread_exit:
+                    logger.info('HB Sck Thread Exit')
+                    client_socket.close()
+                    logger.info('HB Sck Disconnected')
+                    break
+            
+
+        logger.debug('-- HB Sck Serv thread exit --')
+
+class SerialQueueThread(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
         threading.Thread.__init__(self, group=group, target=target, name=name,
@@ -94,6 +144,8 @@ class SerialToNet(serial.threaded.Protocol):
         self.socket = None
         self.buff = []
         self.connected = False
+        self.hb_sck_thread = None
+        self.hc2_sck_thread = None
 
     def __call__(self):
         return self
@@ -119,13 +171,23 @@ class SerialToNet(serial.threaded.Protocol):
                     evt_name = 'unknown'
                     logger.warning('unknown event, raise exception')
                     raise Exception('unknown DDL event')
-                    
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
-                    pass
                 else:
-                    if not self.socket is None:
-                        self.socket.sendall(evt_name)
-                        logger.debug('feedback serial event %s' % evt_name)
+                    # event feedback for homebridge if exist
+                    if not self.hb_sck_thread:
+                        logger.info('feedback yale event %s for HB' % evt_name)
+                        post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
+                        r = requests.get(post_url)
+                        if r.status_code == 200:
+                            logger.debug('DDL event %s http post notify to url %s' % (evt_name,post_url))
+                        else:
+                            logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
+                        
+                    # TODO: event feedback for HC2 if exist
+                
+                if not self.socket is None:
+                    self.socket.sendall(evt_name)
+                    logger.debug('feedback serial event %s' % evt_name)
+                
     
     def process_data_frame(self,data_frame):
         data_hex = ','.join('{:02x}'.format(x) for x in data_frame)
@@ -364,15 +426,29 @@ it waits for the next connect.
     # setup serial port command queue
     q = Queue.Queue()
  
-    ser_to_net = SerialToNet()
-    serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
-    serial_worker.start()
-    
+    # setup serial cmd receiver thread
     ser_q_worker = SerialQueueThread()
     ser_q_worker.ser = ser
     ser_q_worker.queue = q
     ser_q_worker.start()
 
+    # setup serial port data receiver thread
+    ser_to_net = SerialToNet()
+    if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT != '':
+        # setup socket server thread for homebridge 
+        sck_hb_worker = HBSocketServerThread()
+        sck_hb_worker.ser_queue = q
+        sck_hb_worker.start()
+        ser_to_net.hb_sck_thread = sck_hb_worker
+    
+    # TODO: setup socket server thread for hc2
+#     sck_hc2_worker = HC2SocketServerThread()
+#     sck_hc2_worker.ser_queue = q
+#     sck_hc2_worker.start()
+
+    serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
+    serial_worker.start()
+    
     if not args.client:
         srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -443,7 +519,14 @@ it waits for the next connect.
         pass
 
     serial_worker.stop()
-    ser_q_worker.thread_exit = True;
-    ser_q_worker.join()
+
+    ser_q_worker.thread_exit = True
+    sck_hb_worker.thread_exit = True
+#     sck_hc2_worker.thread_exit = True
+    
+    ser_q_worker.join(30)
+    sck_hb_worker.join(30)
+#     sck_hc2_worker.join(30)
+    
     
     sys.stderr.write('\n--- exit ---\n')
