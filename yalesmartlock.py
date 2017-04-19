@@ -115,6 +115,7 @@ class SerialQueueThread(threading.Thread):
         return
     
     def stop(self):
+        logger.debug('SerialQueueThread event set')
         self._stop.set()
         
     def stopped(self):
@@ -122,7 +123,7 @@ class SerialQueueThread(threading.Thread):
     
     def run(self):
         logger.debug('serial queue thread (daemon: %s) running ...' % self.daemon)
-        while not self.stopped():
+        while True:
             cmd = ''
             try:
                 cmd = self.queue.get(timeout=1)
@@ -152,6 +153,9 @@ class SerialQueueThread(threading.Thread):
             except Queue.Empty:
                 #logger.debug('serial cmd queue recv timeout')
                 pass
+            finally:
+                if self.stopped():
+                    break
         logger.debug('-- serial queue thread exit --')
     
 class SerialToNet(serial.threaded.Protocol):
@@ -453,12 +457,15 @@ it waits for the next connect.
 
     # setup serial port data receiver thread
     ser_to_net = SerialToNet()
-    if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT != '':
+    if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
         # setup socket server thread for homebridge 
         sck_hb_worker = HBSocketServerThread()
         sck_hb_worker.ser_queue = q
         sck_hb_worker.start()
         ser_to_net.hb_sck_thread = sck_hb_worker
+    else:
+        logger.warning('No HB Sck Server Setup')
+        sck_hb_worker = None
     
     # TODO: setup socket server thread for hc2
 #     sck_hc2_worker = HC2SocketServerThread()
@@ -537,12 +544,22 @@ it waits for the next connect.
     except KeyboardInterrupt:
         pass
 
+    logger.debug('stoping serial_worker thread ...')
     serial_worker.stop()
-    sck_hb_worker.stop()
+    serial_worker.join()
+
+    logger.debug('stoping ser_q_worker thread ...')
+    ser_q_worker.stop()
+    ser_q_worker.join()
+
+    if sck_hb_worker:
+        logger.debug('stoping sck_hb_worker thread ...')
+        sck_hb_worker.stop()
+        sck_hb_worker.join()
 
 #     ser_q_worker.thread_exit = True
 #     sck_hc2_worker.thread_exit = True
         
     
-    logger.info('--- exit ---')
-    sys.exit(0)
+    logger.warning('--- exit ---')
+
