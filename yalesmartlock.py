@@ -77,7 +77,6 @@ class HBSocketServerThread(threading.Thread):
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                client_socket.settimeout(3)
                 while not self.stopped():
                     try:
                         cmd = client_socket.recv(1024)
