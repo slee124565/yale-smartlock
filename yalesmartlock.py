@@ -47,8 +47,16 @@ class HBSocketServerThread(threading.Thread):
         self.kwargs = kwargs
         self.ser_queue = None
         self.localport = 9001
-        self.thread_exit = False
+        self._stop = threading.Event()
+#         self.thread_exit = False
         return
+    
+    def stop(self):
+        logger.debug('HB Sck Thread set to stop')
+        self._stop.set()
+        
+    def stopped(self):
+        return self._stop.isSet()
     
     def run(self):
         logger.debug('HB Sck thread (daemon: %s) running ...' % self.daemon)
@@ -69,7 +77,7 @@ class HBSocketServerThread(threading.Thread):
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                client_socket.settimeout(3)
+#                 client_socket.settimeout(3)
     
                 cmd = client_socket.recv(1024)
                 if not cmd:
@@ -80,7 +88,7 @@ class HBSocketServerThread(threading.Thread):
             except socket.error as msg:
                 logger.error('HB Sck ERROR: {}'.format(msg))
             finally:
-                if self.thread_exit:
+                if self.stopped():
                     logger.info('HB Sck Thread Exit')
                     client_socket.close()
                     logger.info('HB Sck Disconnected')
@@ -98,12 +106,19 @@ class SerialQueueThread(threading.Thread):
         self.kwargs = kwargs
         self.queue = None
         self.ser = None
-        self.thread_exit = False
+#         self.thread_exit = False
+        self._stop = threading.Event()
         return
+    
+    def stop(self):
+        self._stop.set()
+        
+    def stopped(self):
+        return self._stop.isSet()
     
     def run(self):
         logger.debug('serial queue thread (daemon: %s) running ...' % self.daemon)
-        while not self.thread_exit:
+        while not self.stopped():
             cmd = ''
             try:
                 cmd = self.queue.get(timeout=1)
@@ -519,14 +534,11 @@ it waits for the next connect.
         pass
 
     serial_worker.stop()
+    sck_hb_worker.stop()
 
-    ser_q_worker.thread_exit = True
-    sck_hb_worker.thread_exit = True
+#     ser_q_worker.thread_exit = True
 #     sck_hc2_worker.thread_exit = True
+        
     
-    ser_q_worker.join(30)
-    sck_hb_worker.join(30)
-#     sck_hc2_worker.join(30)
-    
-    
-    sys.stderr.write('\n--- exit ---\n')
+    logger.info('--- exit ---')
+    sys.exit(0)
