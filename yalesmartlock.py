@@ -46,7 +46,7 @@ class HBSocketServerThread(threading.Thread):
         self.args = args
         self.kwargs = kwargs
         self.ser_queue = None
-        self.localport = 9001
+        self.localport = 7777
         self._stop = threading.Event()
 #         self.thread_exit = False
         return
@@ -66,25 +66,27 @@ class HBSocketServerThread(threading.Thread):
         srv.bind(('', self.localport))
         srv.listen(1)
         
-        while True:
+        while not self.stopped():
             try:
                 logger.info('HB Sck Waiting for connection on {}...'.format(self.localport))
                 client_socket, addr = srv.accept()
-                logger.info('Connected by {}\n'.format(addr))
+                logger.info('HB Sck Connected by {}\n'.format(addr))
                 
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
                 client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-#                 client_socket.settimeout(3)
-    
-                cmd = client_socket.recv(1024)
-                if not cmd:
-                    logger.info('HB Sck recv homebridge cmd: %s' % cmd)
-                    self.ser_queue.put(cmd)
-            except socket.timeout:
-                logger.debug('HB Sck Timeout')
+                client_socket.settimeout(3)
+                while not self.stopped():
+                    try:
+                        cmd = client_socket.recv(1024)
+                        if not cmd:
+                            logger.info('HB Sck recv homebridge cmd: %s' % cmd)
+                            self.ser_queue.put(cmd)
+                    except socket.timeout:
+                        #logger.debug('HB Sck recv timeout')
+                        pass
             except socket.error as msg:
                 logger.error('HB Sck ERROR: {}'.format(msg))
             finally:
@@ -188,7 +190,7 @@ class SerialToNet(serial.threaded.Protocol):
                     raise Exception('unknown DDL event')
                 else:
                     # event feedback for homebridge if exist
-                    if not self.hb_sck_thread:
+                    if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                         logger.info('feedback yale event %s for HB' % evt_name)
                         post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
                         r = requests.get(post_url)
@@ -200,7 +202,7 @@ class SerialToNet(serial.threaded.Protocol):
                     # TODO: event feedback for HC2 if exist
                 
                 if not self.socket is None:
-                    self.socket.sendall(evt_name)
+                    self.socket.sendall(evt_name + '\n')
                     logger.debug('feedback serial event %s' % evt_name)
                 
     
