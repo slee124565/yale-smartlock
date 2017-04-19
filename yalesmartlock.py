@@ -92,6 +92,8 @@ class HBSocketServerThread(threading.Thread):
                         break
             except socket.error as msg:
                 logger.error('HB Sck ERROR: {}'.format(msg))
+            except Exception as e:
+                logger.error('HB Sck Thread Unhandle Err: {}'.format(e))
             finally:
                 client_socket.close()
                 logger.info('HB Sck Disconnected')
