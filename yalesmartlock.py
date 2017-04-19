@@ -81,11 +81,12 @@ class HBSocketServerThread(threading.Thread):
                 while not self.stopped():
                     try:
                         cmd = client_socket.recv(1024)
-                        if not cmd:
+                        if cmd:
                             logger.info('HB Sck recv homebridge cmd: %s' % cmd)
                             self.ser_queue.put(cmd)
-                        else:
-                            break
+                    except socket.error as msg:
+                        logger.debug('HB Sck Conn Err: {}'.format(msg))
+                        break
                     except socket.timeout:
                         #logger.debug('HB Sck recv timeout')
                         pass
