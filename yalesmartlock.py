@@ -200,56 +200,56 @@ class SerialToNet(serial.threaded.Protocol):
             
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_PIN)],YALE_DATA_UNLOCK_BY_PIN) == 0:
                 logger.info('DDL event => unlock by pin code')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
                 else:
                     evt_name = 'unlock/pin'
                 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
                 logger.info('DDL event => unlock by ibutton')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
                 else:
                     evt_name = 'unlock/ibutton'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
                 logger.info('DDL event => unlock by fingerprint')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
                 else:
                     evt_name = 'status/fingerprint'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
                 logger.info('DDL event => unlock by card')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
                 else:
                     evt_name = 'status/card'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_INTRUDER)],YALE_DATA_ALARM_INTRUDER) == 0:
                 logger.info('DDL event => intruder alarm')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'alarm'
                 else:
                     evt_name = 'alarm/intruder'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_DAMAGE)],YALE_DATA_ALARM_DAMAGE) == 0:
                 logger.info('DDL event => damage alarm')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'alarm'
                 else:
                     evt_name = 'alarm/damage'
 
             if cmp(data_frame[:len(YALE_DATA_ALARM_FIRE)],YALE_DATA_ALARM_FIRE) == 0:
                 logger.info('DDL event => fire alarm')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'alarm'
                 else:
                     evt_name = 'alarm/fire'
                 
             if cmp(data_frame[:len(YALE_DATA_ALARM_CLEAR)],YALE_DATA_ALARM_CLEAR) == 0:
                 logger.info('DDL event => alarm clear')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'alarm_clear'
                 else:
                     evt_name = 'alarm_clear'
@@ -258,7 +258,7 @@ class SerialToNet(serial.threaded.Protocol):
             if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0 or \
                 cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
                 logger.info('DDL status => locked')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/locked'
                 else:
                     evt_name = 'status/locked'
@@ -266,14 +266,14 @@ class SerialToNet(serial.threaded.Protocol):
             if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0 or \
                 cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
                 logger.info('DDL status => unlocked')
-                if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
                 else:
                     evt_name = 'status/unlocked'
             
             logger.debug('parse received data event: %s' % evt_name)
             
-#             if settings.YALE_EVENT_HTTP_POST_SIRI_MODE:
+#             if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
 #                 if evt_name != '':
 #                     post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
 #                     r = requests.get(post_url)
