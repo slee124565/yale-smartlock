@@ -286,31 +286,31 @@ class SerialToNet(serial.threaded.Protocol):
 
         return evt_name
 
-def sck_cmd_handler(ser, cmd):
-    data = []    
-    cmd = cmd.replace('\r\n','')
-    logger.debug('sck_cmd_handler: %s' % cmd)
-    if not ser is None: 
-        if cmd.lower().find('lock') == 0:
-            logger.info('recv HA cmd: lock')
-            data = bytearray(YALE_CMD_LOCK)
-        elif cmd.lower().find('unlock') == 0:
-            logger.info('recv HA cmd: unlock')
-            data = bytearray(YALE_CMD_UNLOCK)
-        elif cmd.lower().find('status') == 0:
-            logger.info('recv HA cmd: status check')
-            data = bytearray(YALE_CMD_STATUS)
-        else:
-            logger.warning('recv HA cmd unkown: %s, ignore' % cmd)
-    
-    if len(data) > 0:
-        data_hex = ','.join('{:02x}'.format(x) for x in data)
-        logger.debug('send yale command %s' % data_hex)
-        ser.write(data)
-        return True
-    else:
-        logger.debug('no data for serial port')
-        return False
+# def sck_cmd_handler(ser, cmd):
+#     data = []    
+#     cmd = cmd.replace('\r\n','')
+#     logger.debug('sck_cmd_handler: %s' % cmd)
+#     if not ser is None: 
+#         if cmd.lower().find('lock') == 0:
+#             logger.info('recv HA cmd: lock')
+#             data = bytearray(YALE_CMD_LOCK)
+#         elif cmd.lower().find('unlock') == 0:
+#             logger.info('recv HA cmd: unlock')
+#             data = bytearray(YALE_CMD_UNLOCK)
+#         elif cmd.lower().find('status') == 0:
+#             logger.info('recv HA cmd: status check')
+#             data = bytearray(YALE_CMD_STATUS)
+#         else:
+#             logger.warning('recv HA cmd unkown: %s, ignore' % cmd)
+#     
+#     if len(data) > 0:
+#         data_hex = ','.join('{:02x}'.format(x) for x in data)
+#         logger.debug('send yale command %s' % data_hex)
+#         ser.write(data)
+#         return True
+#     else:
+#         logger.debug('no data for serial port')
+#         return False
 
 if __name__ == '__main__':  # noqa
     import argparse
