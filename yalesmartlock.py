@@ -412,7 +412,7 @@ it waits for the next connect.
         '-P', '--localport',
         type=int,
         help='local TCP port',
-        default=19200)
+        default=7777)
 
     exclusive_group.add_argument(
         '-c', '--client',
