@@ -104,7 +104,7 @@ class SerialToNet(serial.threaded.Protocol):
         self.socket = None
         self.buff = []
         self.connected = False
-        self.hc2_sck_thread = None
+        self.cmd_queue = None
 
     def __call__(self):
         return self
@@ -128,7 +128,9 @@ class SerialToNet(serial.threaded.Protocol):
                 
                 if evt_name == '':
                     evt_name = 'unknown'
-                    logger.warning('unknown event, raise exception')
+                    logger.warning('unknown event, add status cmd into queue')
+                    if self.cmd_queue:
+                        self.cmd_queue.put('status')
                     #raise Exception('unknown DDL event')
                 else:
                     # event feedback for homebridge if exist
@@ -348,6 +350,7 @@ it waits for the next connect.
 
     # setup serial port data receiver thread
     ser_to_net = SerialToNet()
+    ser_to_net.cmd_queue = q
     serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
     serial_worker.start()
     
