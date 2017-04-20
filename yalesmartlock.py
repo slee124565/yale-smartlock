@@ -129,7 +129,7 @@ class SerialToNet(serial.threaded.Protocol):
                 if evt_name == '':
                     evt_name = 'unknown'
                     logger.warning('unknown event, raise exception')
-                    raise Exception('unknown DDL event')
+                    #raise Exception('unknown DDL event')
                 else:
                     # event feedback for homebridge if exist
                     if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
