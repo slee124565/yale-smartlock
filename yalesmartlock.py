@@ -47,6 +47,14 @@ class SocketClientThread(threading.Thread):
         self.kwargs = kwargs
         self.client_socket = None
         self.client_ip = None
+        self._stop = threading.Event()
+
+    def stop(self):
+        logger.info('stop sck_client_thread %s' % self.client_ip)
+        self._stop.set()
+        
+    def stopped(self):
+        return self._stop.isSet()
 
     def run(self):
         # More quickly detect bad clients who quit without closing the
@@ -77,6 +85,7 @@ class SocketClientThread(threading.Thread):
         finally:
             logger.info('sck client(%s) Disconnected' % (self.client_ip))
             self.client_socket.close()
+            self.stop()
         
 class SerialQueueThread(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
@@ -395,7 +404,7 @@ it waits for the next connect.
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     srv.bind(('', args.localport))
-    srv.listen(1)
+    srv.listen(2)
 
     client_threads = []
     
@@ -411,6 +420,10 @@ it waits for the next connect.
             client_thread.client_ip = addr[0]
             client_thread.start()
             client_threads.append(client_thread)
+            
+            for t in client_threads:
+                if t.stopped():
+                    del t
             
 #             # More quickly detect bad clients who quit without closing the
 #             # connection: After 1 second of idle, start sending TCP keep-alive
