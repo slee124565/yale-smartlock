@@ -52,6 +52,7 @@ class SocketClientThread(threading.Thread):
     def stop(self):
         logger.info('stop sck_client_thread %s' % self.client_ip)
         self._stop.set()
+        self.client_socket.close()
         
     def stopped(self):
         return self._stop.isSet()
@@ -66,14 +67,18 @@ class SocketClientThread(threading.Thread):
         client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
         client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
         client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        client_socket.settimeout(3)
         try:
-            while True:
+            while not self.stopped():
                 try:
                     data = self.client_socket.recv(1024)
                     if not data:
                         break
                     logger.info('sck client(%s) data: %s' % (self.client_ip,data))
                     q.put(data)
+                except socket.timeout:
+                    #logger.debug('sck client(%s) recv timeout, ignore' % (self.client_ip))
+                    pass
                 except socket.error as msg:
                     logger.error('sck client(%s) ERROR: %s' % (self.client_ip,msg))
                     # probably got disconnected
@@ -423,6 +428,7 @@ it waits for the next connect.
             
             for t in client_threads:
                 if t.stopped():
+                    logger.debug('remove stopped client sck thread (%s)' % t.client_ip)
                     del t
             
 #             # More quickly detect bad clients who quit without closing the
@@ -477,7 +483,7 @@ it waits for the next connect.
     logger.debug('stoping sck_client threads')
     for t in client_threads:
         logger.debug('close sck_client(%s) connection' % t.client_ip)
-        t.client_socket.close()
+        t.stop()
         t.join()
 
     logger.warning('--- exit ---')
