@@ -75,7 +75,10 @@ class SocketClientThread(threading.Thread):
                     if not data:
                         break
                     logger.info('sck client(%s) data: %s' % (self.client_ip,data))
-                    q.put(data)
+                    if data == 'exit':
+                        self.stop()
+                    else:
+                        q.put(data)
                 except socket.timeout:
                     #logger.debug('sck client(%s) recv timeout, ignore' % (self.client_ip))
                     pass
@@ -431,44 +434,6 @@ it waits for the next connect.
                     logger.debug('remove stopped client sck thread (%s)' % t.client_ip)
                     del t
             
-#             # More quickly detect bad clients who quit without closing the
-#             # connection: After 1 second of idle, start sending TCP keep-alive
-#             # packets every 1 second. If 3 consecutive keep-alive packets
-#             # fail, assume the client is gone and close the connection.
-#             client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
-#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
-#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
-#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-#             try:
-#                 ser_to_net.socket = client_socket
-#                 # enter network <-> serial loop
-#                 while True:
-#                     try:
-#                         data = client_socket.recv(1024)
-#                         if not data:
-#                             break
-#                         logger.debug('recv sck cmd: %s' % data)
-#                         q.put(data)
-# #                         sck_cmd_handler(ser,data)
-# #                         ser.write(data)                 # get a bunch of bytes and send them
-#                     except socket.error as msg:
-#                         if args.develop:
-#                             raise
-#                         sys.stderr.write('ERROR: {}\n'.format(msg))
-#                         # probably got disconnected
-#                         break
-#             except KeyboardInterrupt:
-#                 intentional_exit = True
-#                 raise
-#             except socket.error as msg:
-#                 if args.develop:
-#                     raise
-#                 sys.stderr.write('ERROR: {}\n'.format(msg))
-#             finally:
-#                 ser_to_net.socket = None
-#                 sys.stderr.write('Disconnected\n')
-#                 client_socket.close()
     except KeyboardInterrupt:
         pass
 
