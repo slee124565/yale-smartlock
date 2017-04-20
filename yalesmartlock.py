@@ -232,44 +232,7 @@ class SerialToNet(serial.threaded.Protocol):
             
             logger.debug('parse received data event: %s' % evt_name)
             
-#             if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-#                 if evt_name != '':
-#                     post_url = settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT + evt_name
-#                     r = requests.get(post_url)
-#                     if r.status_code == 200:
-#                         logger.info('DDL event %s http post notify to url %s' % (evt_name,post_url))
-#                     else:
-#                         logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
-#                 else:
-#                     logger.warning('unhandle data frame %s' % data_hex)
-
         return evt_name
-
-# def sck_cmd_handler(ser, cmd):
-#     data = []    
-#     cmd = cmd.replace('\r\n','')
-#     logger.debug('sck_cmd_handler: %s' % cmd)
-#     if not ser is None: 
-#         if cmd.lower().find('lock') == 0:
-#             logger.info('recv HA cmd: lock')
-#             data = bytearray(YALE_CMD_LOCK)
-#         elif cmd.lower().find('unlock') == 0:
-#             logger.info('recv HA cmd: unlock')
-#             data = bytearray(YALE_CMD_UNLOCK)
-#         elif cmd.lower().find('status') == 0:
-#             logger.info('recv HA cmd: status check')
-#             data = bytearray(YALE_CMD_STATUS)
-#         else:
-#             logger.warning('recv HA cmd unkown: %s, ignore' % cmd)
-#     
-#     if len(data) > 0:
-#         data_hex = ','.join('{:02x}'.format(x) for x in data)
-#         logger.debug('send yale command %s' % data_hex)
-#         ser.write(data)
-#         return True
-#     else:
-#         logger.debug('no data for serial port')
-#         return False
 
 if __name__ == '__main__':  # noqa
     import argparse
@@ -342,19 +305,11 @@ it waits for the next connect.
 
     group = parser.add_argument_group('network settings')
 
-    exclusive_group = group.add_mutually_exclusive_group()
-
-    exclusive_group.add_argument(
+    group.add_argument(
         '-P', '--localport',
         type=int,
         help='local TCP port',
         default=7777)
-
-    exclusive_group.add_argument(
-        '-c', '--client',
-        metavar='HOST:PORT',
-        help='make the connection as a client, instead of running a server',
-        default=False)
 
     args = parser.parse_args()
     
@@ -396,41 +351,26 @@ it waits for the next connect.
     serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
     serial_worker.start()
     
-    if not args.client:
-        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        srv.bind(('', args.localport))
-        srv.listen(1)
-        
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(('', args.localport))
+    srv.listen(1)
+
     try:
         intentional_exit = False
         while True:
-            if args.client:
-                host, port = args.client.split(':')
-                logger.info("Opening connection to {}:{}...\n".format(host, port))
-                client_socket = socket.socket()
-                try:
-                    client_socket.connect((host, int(port)))
-                except socket.error as msg:
-                    logger.warning('WARNING: {}\n'.format(msg))
-                    time.sleep(5)  # intentional delay on reconnection as client
-                    continue
-                logger.info('Connected\n')
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                #~ client_socket.settimeout(15)
-            else:
-                logger.info('Waiting for connection on {}...\n'.format(args.localport))
-                client_socket, addr = srv.accept()
-                logger.info('Connected by {}\n'.format(addr))
-                # More quickly detect bad clients who quit without closing the
-                # connection: After 1 second of idle, start sending TCP keep-alive
-                # packets every 1 second. If 3 consecutive keep-alive packets
-                # fail, assume the client is gone and close the connection.
-                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
-                client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            logger.info('Waiting for connection on {}...\n'.format(args.localport))
+            client_socket, addr = srv.accept()
+            logger.info('Connected by {}\n'.format(addr))
+            # More quickly detect bad clients who quit without closing the
+            # connection: After 1 second of idle, start sending TCP keep-alive
+            # packets every 1 second. If 3 consecutive keep-alive packets
+            # fail, assume the client is gone and close the connection.
+            client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
                 ser_to_net.socket = client_socket
                 # enter network <-> serial loop
@@ -460,8 +400,6 @@ it waits for the next connect.
                 ser_to_net.socket = None
                 sys.stderr.write('Disconnected\n')
                 client_socket.close()
-                if args.client and not intentional_exit:
-                    time.sleep(5)  # intentional delay on reconnection as client
     except KeyboardInterrupt:
         pass
 
@@ -473,9 +411,5 @@ it waits for the next connect.
     ser_q_worker.stop()
     ser_q_worker.join()
 
-#     ser_q_worker.thread_exit = True
-#     sck_hc2_worker.thread_exit = True
-        
-    
     logger.warning('--- exit ---')
 
