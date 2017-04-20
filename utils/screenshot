@@ -1,0 +1,4 @@
+#!/bin/bash -x
+
+sudo -u pi DISPLAY=:0 scrot /home/pi/screenshot/desktop_screen.png
+
