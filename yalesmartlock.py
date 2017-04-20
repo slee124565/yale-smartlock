@@ -38,6 +38,46 @@ YALE_STATE_UNLOCKED             = [0x05,0x19,0x01,0x12]
 YALE_STATE_UNLOCK_RESP          = [0x05,0x19,0x02,0x11]
 YALE_STATE_LOCK_RESP            = [0x05,0x19,0x02,0x12]
 
+class SocketClientThread(threading.Thread):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
+        threading.Thread.__init__(self, group=group, target=target, name=name,
+                                  verbose=verbose)
+        self.args = args
+        self.kwargs = kwargs
+        self.client_socket = None
+        self.client_ip = None
+
+    def run(self):
+        # More quickly detect bad clients who quit without closing the
+        # connection: After 1 second of idle, start sending TCP keep-alive
+        # packets every 1 second. If 3 consecutive keep-alive packets
+        # fail, assume the client is gone and close the connection.
+        client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
+        client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
+        client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+        client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        try:
+            while True:
+                try:
+                    data = self.client_socket.recv(1024)
+                    if not data:
+                        break
+                    logger.info('sck client(%s) data: %s' % (self.client_ip,data))
+                    q.put(data)
+                except socket.error as msg:
+                    logger.error('sck client(%s) ERROR: %s' % (self.client_ip,msg))
+                    # probably got disconnected
+                    break
+        except KeyboardInterrupt:
+            logger.error('sck client(%s) KeyboardInterrupt: %s' % (self.client_ip))
+        except socket.error as msg:
+            logger.error('sck client(%s) ERROR: %s' % (self.client_ip,msg))
+        finally:
+            logger.info('sck client(%s) Disconnected' % (self.client_ip))
+            self.client_socket.close()
+        
 class SerialQueueThread(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs=None, verbose=None):
@@ -143,8 +183,6 @@ class SerialToNet(serial.threaded.Protocol):
                         else:
                             logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
                         
-                    # TODO: event feedback for HC2 if exist
-                
                 if not self.socket is None:
                     self.socket.sendall(evt_name + '\n')
                     logger.debug('feedback serial event %s' % evt_name)
@@ -359,50 +397,59 @@ it waits for the next connect.
     srv.bind(('', args.localport))
     srv.listen(1)
 
+    client_threads = []
+    
     try:
         intentional_exit = False
         while True:
             logger.info('Waiting for connection on {}...\n'.format(args.localport))
             client_socket, addr = srv.accept()
             logger.info('Connected by {}\n'.format(addr))
-            # More quickly detect bad clients who quit without closing the
-            # connection: After 1 second of idle, start sending TCP keep-alive
-            # packets every 1 second. If 3 consecutive keep-alive packets
-            # fail, assume the client is gone and close the connection.
-            client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
-            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
-            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
-            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            try:
-                ser_to_net.socket = client_socket
-                # enter network <-> serial loop
-                while True:
-                    try:
-                        data = client_socket.recv(1024)
-                        if not data:
-                            break
-                        logger.debug('recv sck cmd: %s' % data)
-                        q.put(data)
-#                         sck_cmd_handler(ser,data)
-#                         ser.write(data)                 # get a bunch of bytes and send them
-                    except socket.error as msg:
-                        if args.develop:
-                            raise
-                        sys.stderr.write('ERROR: {}\n'.format(msg))
-                        # probably got disconnected
-                        break
-            except KeyboardInterrupt:
-                intentional_exit = True
-                raise
-            except socket.error as msg:
-                if args.develop:
-                    raise
-                sys.stderr.write('ERROR: {}\n'.format(msg))
-            finally:
-                ser_to_net.socket = None
-                sys.stderr.write('Disconnected\n')
-                client_socket.close()
+            
+            client_thread = SocketClientThread()
+            client_thread.client_socket = client_socket
+            client_thread.client_ip = addr[0]
+            client_thread.start()
+            client_threads.append(client_thread)
+            
+#             # More quickly detect bad clients who quit without closing the
+#             # connection: After 1 second of idle, start sending TCP keep-alive
+#             # packets every 1 second. If 3 consecutive keep-alive packets
+#             # fail, assume the client is gone and close the connection.
+#             client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
+#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
+#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+#             client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+#             try:
+#                 ser_to_net.socket = client_socket
+#                 # enter network <-> serial loop
+#                 while True:
+#                     try:
+#                         data = client_socket.recv(1024)
+#                         if not data:
+#                             break
+#                         logger.debug('recv sck cmd: %s' % data)
+#                         q.put(data)
+# #                         sck_cmd_handler(ser,data)
+# #                         ser.write(data)                 # get a bunch of bytes and send them
+#                     except socket.error as msg:
+#                         if args.develop:
+#                             raise
+#                         sys.stderr.write('ERROR: {}\n'.format(msg))
+#                         # probably got disconnected
+#                         break
+#             except KeyboardInterrupt:
+#                 intentional_exit = True
+#                 raise
+#             except socket.error as msg:
+#                 if args.develop:
+#                     raise
+#                 sys.stderr.write('ERROR: {}\n'.format(msg))
+#             finally:
+#                 ser_to_net.socket = None
+#                 sys.stderr.write('Disconnected\n')
+#                 client_socket.close()
     except KeyboardInterrupt:
         pass
 
@@ -413,6 +460,12 @@ it waits for the next connect.
     logger.debug('stoping ser_q_worker thread ...')
     ser_q_worker.stop()
     ser_q_worker.join()
+    
+    logger.debug('stoping sck_client threads')
+    for t in client_threads:
+        logger.debug('close sck_client(%s) connection' % t.client_ip)
+        t.client_socket.close()
+        t.join()
 
     logger.warning('--- exit ---')
 
