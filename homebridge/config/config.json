@@ -1,0 +1,23 @@
+{
+    "bridge": {
+        "name": "YaleBox",
+        "username": "B8:27:EB:C6:7D:C5",
+        "port": 51826,
+        "pin": "123-45-678"
+    },
+    
+    "description": "FLH YaleBox Project" ,
+    
+	"accessories": [
+	    {
+	        "accessory": "YaleSmartLock",
+	        "name": "耶魯門鎖",
+	        "sck_serv": {
+	        	"ip": "127.0.0.1",
+	        	"port": 7777
+	        },
+            "debug": 1
+	    }
+	  ]
+
+}
