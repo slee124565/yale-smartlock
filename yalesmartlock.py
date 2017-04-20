@@ -50,7 +50,6 @@ class SocketClientThread(threading.Thread):
         self._stop = threading.Event()
 
     def stop(self):
-        logger.info('stop sck_client_thread %s' % self.client_ip)
         self._stop.set()
         self.client_socket.close()
         
@@ -75,7 +74,7 @@ class SocketClientThread(threading.Thread):
                     if not data:
                         break
                     logger.info('sck client(%s) data: %s' % (self.client_ip,data))
-                    if data == 'exit':
+                    if data[:4] == 'exit':
                         self.stop()
                     else:
                         q.put(data)
