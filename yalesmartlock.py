@@ -168,7 +168,6 @@ class SerialToNet(serial.threaded.Protocol):
         self.socket = None
         self.buff = []
         self.connected = False
-        self.hb_sck_thread = None
         self.hc2_sck_thread = None
 
     def __call__(self):
@@ -458,21 +457,6 @@ it waits for the next connect.
 
     # setup serial port data receiver thread
     ser_to_net = SerialToNet()
-    if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-        # setup socket server thread for homebridge 
-        sck_hb_worker = HBSocketServerThread()
-        sck_hb_worker.ser_queue = q
-        sck_hb_worker.start()
-        ser_to_net.hb_sck_thread = sck_hb_worker
-    else:
-        logger.warning('No HB Sck Server Setup')
-        sck_hb_worker = None
-    
-    # TODO: setup socket server thread for hc2
-#     sck_hc2_worker = HC2SocketServerThread()
-#     sck_hc2_worker.ser_queue = q
-#     sck_hc2_worker.start()
-
     serial_worker = serial.threaded.ReaderThread(ser, ser_to_net)
     serial_worker.start()
     
@@ -552,11 +536,6 @@ it waits for the next connect.
     logger.debug('stoping ser_q_worker thread ...')
     ser_q_worker.stop()
     ser_q_worker.join()
-
-    if sck_hb_worker:
-        logger.debug('stoping sck_hb_worker thread ...')
-        sck_hb_worker.stop()
-        sck_hb_worker.join()
 
 #     ser_q_worker.thread_exit = True
 #     sck_hc2_worker.thread_exit = True
