@@ -119,7 +119,7 @@ class SerialQueueThread(threading.Thread):
         while True:
             cmd = ''
             try:
-                cmd = self.queue.get(timeout=1)
+                cmd = self.queue.get(timeout=settings.YALE_STATUS_POLL_TIME_PERIOD)
                 cmd = cmd.replace('\r\n','')
                 logger.debug('recv queue cmd: %s' % cmd)
                 if not self.ser is None:
@@ -144,7 +144,8 @@ class SerialQueueThread(threading.Thread):
                         logger.debug('no data for serial port')
 
             except Queue.Empty:
-                #logger.debug('serial cmd queue recv timeout')
+                logger.debug('serial cmd queue recv timeout')
+                self.queue.put('status')
                 pass
             finally:
                 if self.stopped():
