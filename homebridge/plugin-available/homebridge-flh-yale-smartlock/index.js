@@ -287,6 +287,13 @@ YaleSmartLockAccessory.prototype.setState = function(state, callback) {
 
 YaleSmartLockAccessory.prototype.setTargetState = function(state, callback) {
 	var accessory = this;
+	
+	//-> state value from siri
+	if (state === true) {
+		state = Characteristic.LockTargetState.SECURED;
+	} else if (state === false) {
+		state = Characteristic.LockTargetState.UNSECURED;
+	}
 	var stateText = (state == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
 
 	accessory.log('CALL','setTargetState',state, stateText);
