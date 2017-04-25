@@ -411,6 +411,7 @@ it waits for the next connect.
     
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.settimeout(1)
     srv.bind(('', args.localport))
     srv.listen(2)
 
@@ -419,20 +420,28 @@ it waits for the next connect.
     try:
         intentional_exit = False
         while True:
-            logger.info('Waiting for connection on {}...\n'.format(args.localport))
-            client_socket, addr = srv.accept()
-            logger.info('Connected by {}\n'.format(addr))
-            
-            client_thread = SocketClientThread()
-            client_thread.client_socket = client_socket
-            client_thread.client_ip = addr[0]
-            client_thread.start()
-            client_threads.append(client_thread)
+            try:
+                logger.info('Waiting for connection on {}...\n'.format(args.localport))
+                client_socket, addr = srv.accept()
+                logger.info('Connected by {}\n'.format(addr))
+                
+                client_thread = SocketClientThread()
+                client_thread.client_socket = client_socket
+                client_thread.client_ip = addr[0]
+                client_thread.start()
+                client_threads.append(client_thread)
+            except socket.timeout:
+                logger.debug('sck serv accept timeout, check serial connnection')
+                if ser_to_net.connected:
+                    pass
+                else:
+                    logger.warning('serial connect lost')
+                    raise
             
             for t in client_threads:
                 if t.stopped():
                     logger.debug('remove stopped client sck thread (%s)' % t.client_ip)
-                    del t
+                    client_threads.remove(t)
             
     except KeyboardInterrupt:
         pass
