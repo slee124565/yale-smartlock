@@ -434,8 +434,6 @@ YaleSmartLockAccessory.prototype.statusEventHandler =function() {
 			accessory.log('DEBUG','targetState value null, skip');
 		}
 		
-        accessory.setTargetSecurityState(accessory.targetSecurityState);
-        /*
 		if (accessory.targetSecurityState !== null) {
 			if (accessory.targetSecurityState === accessory.currentSecurityState) {
 				accessory.log('INFO', 'targetSecurityState completed');
@@ -445,7 +443,7 @@ YaleSmartLockAccessory.prototype.statusEventHandler =function() {
 			}
 		} else {
 			accessory.log('DEBUG','targetSecurityState value null, skip');
-		}*/
+		}
 	}
 }
 
