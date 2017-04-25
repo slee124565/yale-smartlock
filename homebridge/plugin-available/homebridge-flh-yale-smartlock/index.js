@@ -109,7 +109,7 @@ function YaleSmartLockAccessory(log, config, api) {
         	
         	if (accessory.targetState !== Characteristic.LockTargetState.SECURED) {
             	accessory.log('EVENT', 'locked');
-            	accessory.currentState = Characteristic.LockCurrentState.SECURED;
+            	//accessory.currentState = Characteristic.LockCurrentState.SECURED;
 	        	accessory.services.LockMechanism
 	        	.setCharacteristic(Characteristic.LockTargetState, 
 	        			Characteristic.LockTargetState.SECURED);
@@ -125,7 +125,7 @@ function YaleSmartLockAccessory(log, config, api) {
         	
         	if (accessory.targetState !== Characteristic.LockTargetState.UNSECURED) {
             	accessory.log('EVENT', 'unlocked');
-            	accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
+            	//accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
 	        	accessory.services.LockMechanism
 	        	.setCharacteristic(Characteristic.LockTargetState, 
 	        			Characteristic.LockTargetState.UNSECURED);
