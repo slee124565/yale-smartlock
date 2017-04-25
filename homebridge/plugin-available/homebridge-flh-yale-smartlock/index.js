@@ -288,16 +288,15 @@ YaleSmartLockAccessory.prototype.setTargetState = function(state, callback) {
 	accessory.targetState = state;
     accessory.logState();
 	if (accessory.targetState !== accessory.currentState) {
-		accessory.setState(state);
+		accessory.setState(state,callback);
 	} else {
 		accessory.log('INFO','targetState == currentState, skip');
 		//accessory.smartlock.checkLockCurrentState();
-	}
-
-    if (callback !== undefined) {
-        callback(null);
-    } else {
-        accessory.log('WARNING', 'setTargetState callback is undefined, skip');
+        if (callback !== undefined) {
+            callback(null);
+        } else {
+            accessory.log('WARNING', 'setTargetState callback is undefined, skip');
+        }
     }
 }
 
