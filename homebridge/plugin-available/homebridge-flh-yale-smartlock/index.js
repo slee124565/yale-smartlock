@@ -198,7 +198,7 @@ YaleSmartLockAccessory.prototype.getState = function(callback) {
 	var stateText = 
 		(accessory.currentState == Characteristic.LockCurrentState.SECURED) ? "lock" : "unlock";
 
-	accessory.log('CALL', 'getState', stateText);
+	accessory.log('CALL', 'getState', accessory.currentState, stateText);
 
 	accessory.smartlock.checkLockCurrentState();
 
@@ -217,7 +217,7 @@ YaleSmartLockAccessory.prototype.getTargetState = function(callback) {
 	var stateText = 
 		(accessory.targetState == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
 
-	accessory.log('CALL', 'getTargetState', stateText);
+	accessory.log('CALL', 'getTargetState', accessory.targetState, stateText);
 
 	if (callback !== undefined) {
 		// return plugin obj's currentState value

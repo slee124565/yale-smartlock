@@ -144,7 +144,7 @@ class SerialQueueThread(threading.Thread):
                         logger.debug('no data for serial port')
 
             except Queue.Empty:
-                logger.debug('serial cmd queue recv timeout')
+                #logger.debug('serial cmd queue recv timeout')
                 self.queue.put('status')
                 pass
             finally:
@@ -419,9 +419,10 @@ it waits for the next connect.
     
     try:
         intentional_exit = False
+        logger.info('Waiting for connection on {}...\n'.format(args.localport))
         while True:
             try:
-                logger.info('Waiting for connection on {}...\n'.format(args.localport))
+                #logger.info('Waiting for connection on {}...\n'.format(args.localport))
                 client_socket, addr = srv.accept()
                 logger.info('Connected by {}\n'.format(addr))
                 
@@ -431,7 +432,7 @@ it waits for the next connect.
                 client_thread.start()
                 client_threads.append(client_thread)
             except socket.timeout:
-                logger.debug('sck serv accept timeout, check serial connnection')
+                #logger.debug('sck serv accept timeout, check serial connnection')
                 if ser_to_net.connected:
                     pass
                 else:
