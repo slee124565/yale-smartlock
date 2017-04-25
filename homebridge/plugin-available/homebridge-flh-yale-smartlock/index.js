@@ -40,7 +40,7 @@ function YaleSmartLockAccessory(log, config, api) {
     accessory.targetState = Characteristic.LockTargetState.UNSECURED;
     accessory.currentSecurityState = Characteristic.SecuritySystemCurrentState.DISARMED;
     accessory.targetSecurityState = Characteristic.SecuritySystemTargetState.DISARM;
-    accessory.DEFAULT_ARMMED_STATE =Characteristic.SecuritySystemCurrentState.STAY_ARM;
+    accessory.DEFAULT_ARMMED_STATE = Characteristic.SecuritySystemCurrentState.STAY_ARM;
 
 
 
@@ -286,7 +286,13 @@ YaleSmartLockAccessory.prototype.setTargetState = function(state, callback) {
 //	.setCharacteristic(Characteristic.LockTargetState, state);
 
 	accessory.targetState = state;
-    accessory.logState();
+	if (stateText === 'lock') {
+		accessory.targetSecurityState = accessory.DEFAULT_ARMMED_STATE;
+	} else {
+		accessory.targetSecurityState = Characteristic.SecuritySystemTargetState.DISARM;
+	}
+    accessory.log('INFO','set',
+    		'targetState',accessory.targetState,'targetSecurityState',accessory.targetSecurityState);
 	if (accessory.targetState !== accessory.currentState) {
 		accessory.setState(state,callback);
 	} else {
