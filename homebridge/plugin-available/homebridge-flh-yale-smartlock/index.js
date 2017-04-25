@@ -115,6 +115,7 @@ function YaleSmartLockAccessory(log, config, api) {
 	        			Characteristic.LockTargetState.SECURED);
         	} else {
             	accessory.log('DEBUG', 'event locked, ignore');
+            	accessory.statusEventHandler();
         	}
         	
             response.writeHead(200, {"Content-Type": "text/plain"});
@@ -131,6 +132,7 @@ function YaleSmartLockAccessory(log, config, api) {
 	        			Characteristic.LockTargetState.UNSECURED);
         	} else {
             	accessory.log('DEBUG', 'event unlocked, ignore');
+            	accessory.statusEventHandler();
         	}
 
         	response.writeHead(200, {"Content-Type": "text/plain"});
