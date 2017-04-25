@@ -86,12 +86,9 @@ function YaleSmartLockAccessory(log, config, api) {
         }
 
         if (request.url === "/yale/status/locked") {
-        	accessory.log('EVENT', 'locked');
+        	accessory.log('STATUS', 'locked');
+
         	accessory.currentState = Characteristic.LockCurrentState.SECURED;
-        	
-//        	accessory.services.LockMechanism
-//        	.setCharacteristic(Characteristic.LockTargetState, 
-//        			Characteristic.LockTargetState.SECURED);
         	accessory.statusEventHandler();
         	
             response.writeHead(200, {"Content-Type": "text/plain"});
@@ -99,13 +96,32 @@ function YaleSmartLockAccessory(log, config, api) {
         }
 
         if (request.url === "/yale/status/unlocked") {
-        	accessory.log('EVENT', 'unlocked');
-        	accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
+        	accessory.log('STATUS', 'unlocked');
         	
-//        	accessory.services.LockMechanism
-//        	.setCharacteristic(Characteristic.LockTargetState, 
-//        			Characteristic.LockTargetState.UNSECURED);
+        	accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
         	accessory.statusEventHandler();
+
+        	response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end("yale event handled\n");
+        }
+
+        if (request.url === "/yale/event/locked") {
+        	accessory.log('EVENT', 'locked');
+        	
+        	accessory.services.LockMechanism
+        	.setCharacteristic(Characteristic.LockTargetState, 
+        			Characteristic.LockTargetState.SECURED);
+        	
+            response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end("yale event handled\n");
+        }
+
+        if (request.url === "/yale/event/unlocked") {
+        	accessory.log('EVENT', 'unlocked');
+        	
+        	accessory.services.LockMechanism
+        	.setCharacteristic(Characteristic.LockTargetState, 
+        			Characteristic.LockTargetState.UNSECURED);
 
         	response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");

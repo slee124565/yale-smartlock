@@ -217,28 +217,49 @@ class SerialToNet(serial.threaded.Protocol):
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_PIN)],YALE_DATA_UNLOCK_BY_PIN) == 0:
                 logger.info('DDL event => unlock by pin code')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'unlock/pin'
                 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
                 logger.info('DDL event => unlock by ibutton')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'unlock/ibutton'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
                 logger.info('DDL event => unlock by fingerprint')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'status/fingerprint'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
                 logger.info('DDL event => unlock by card')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
+                else:
+                    evt_name = 'status/card'
+
+            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0:
+                logger.info('DDL event => unlocked by key')
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
+                    evt_name = 'event/unlocked'
+                else:
+                    evt_name = 'status/key_auto'
+
+            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0:
+                logger.info('DDL event => locked by key or auto')
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
+                    evt_name = 'event/locked'
+                else:
+                    evt_name = 'status/key_auto'
+
+            if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
+                logger.info('DDL event => unlock by card')
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'status/card'
 
@@ -270,17 +291,14 @@ class SerialToNet(serial.threaded.Protocol):
                 else:
                     evt_name = 'alarm_clear'
                 
-                
-            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0 or \
-                cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
+            if cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
                 logger.info('DDL status => locked')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/locked'
                 else:
                     evt_name = 'status/locked'
                 
-            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0 or \
-                cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
+            if cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
                 logger.info('DDL status => unlocked')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
