@@ -132,7 +132,12 @@ function YaleSmartLockAccessory(log, config, api) {
 	        			Characteristic.LockTargetState.UNSECURED);
         	} else {
             	accessory.log('DEBUG', 'event unlocked, ignore');
-            	accessory.statusEventHandler();
+            	if (accessory.currentSecurityState 
+            			=== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
+                	accessory.disarmHandler();
+            	} else {
+	            	accessory.statusEventHandler();
+            	}
         	}
 
         	response.writeHead(200, {"Content-Type": "text/plain"});
