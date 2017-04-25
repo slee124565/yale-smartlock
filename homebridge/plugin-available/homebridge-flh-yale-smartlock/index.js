@@ -427,9 +427,9 @@ YaleSmartLockAccessory.prototype.statusEventHandler = function() {
 		if (accessory.targetSecurityState !== null) {
 			if (accessory.targetSecurityState === accessory.currentSecurityState) {
 				accessory.log('INFO', 'targetSecurityState completed');
-				accessory.services.LockMechanism
-				.setCharacteristic(Characteristic.SecuritySystemCurrentState, 
-						accessory.currentSecurityState);
+//				accessory.services.LockMechanism
+//				.setCharacteristic(Characteristic.SecuritySystemCurrentState, 
+//						accessory.currentSecurityState);
 			} else {
 				accessory.log('INFO','targetSecurityState different, go for target');
 		        accessory.services.SecuritySystem
