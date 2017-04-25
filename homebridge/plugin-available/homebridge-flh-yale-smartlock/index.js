@@ -394,8 +394,10 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 			accessory.log('INFO','start to unlock ...');
 			accessory.smartlock.unlock();
 		}
-	 	accessory.services.SecuritySystem
-		.setCharacteristic(Characteristic.SecuritySystemTargetState, state);
+	 	accessory.targetSecurityState = state;
+        accessory.services.SecuritySystem
+		.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
+        accessory.currentSecurityState = state;
     }
 	
 	if (callback !== undefined) {
@@ -427,6 +429,8 @@ YaleSmartLockAccessory.prototype.statusEventHandler =function() {
 			accessory.log('DEBUG','targetState value null, skip');
 		}
 		
+        accessory.setTargetSecurityState(accessory.targetSecurityState);
+        /*
 		if (accessory.targetSecurityState !== null) {
 			if (accessory.targetSecurityState === accessory.currentSecurityState) {
 				accessory.log('INFO', 'targetSecurityState completed');
@@ -436,7 +440,7 @@ YaleSmartLockAccessory.prototype.statusEventHandler =function() {
 			}
 		} else {
 			accessory.log('DEBUG','targetSecurityState value null, skip');
-		}
+		}*/
 	}
     accessory.logState();
     accessory.logSecurityState();
