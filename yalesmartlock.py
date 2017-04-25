@@ -480,4 +480,4 @@ it waits for the next connect.
         t.join()
 
     logger.warning('--- exit ---')
-
+    sys.exit(1)
