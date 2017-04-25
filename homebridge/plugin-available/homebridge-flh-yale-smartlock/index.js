@@ -191,18 +191,6 @@ YaleSmartLockAccessory.prototype.smartlockDisconnect = function() {
 	}, 5 * 1000);
 }
 
-YaleSmartLockAccessory.prototype.logState = function() {
-	var accessory = this;
-	accessory.log('DEBUG','currState',accessory.currentState,
-			'targetState',accessory.targetState);
-}
-
-YaleSmartLockAccessory.prototype.logSecurityState = function() {
-	var accessory = this;
-	accessory.log('DEBUG','currSecurityState',accessory.currentSecurityState,
-			'targetSecurityState',accessory.targetSecurityState);
-}
-
 YaleSmartLockAccessory.prototype.getState = function(callback) {
 	var accessory = this;
 	
@@ -211,7 +199,6 @@ YaleSmartLockAccessory.prototype.getState = function(callback) {
 		(accessory.currentState == Characteristic.LockCurrentState.SECURED) ? "lock" : "unlock";
 
 	accessory.log('CALL', 'getState', stateText);
-	accessory.logState();
 
 	accessory.smartlock.checkLockCurrentState();
 
@@ -231,7 +218,6 @@ YaleSmartLockAccessory.prototype.getTargetState = function(callback) {
 		(accessory.targetState == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
 
 	accessory.log('CALL', 'getTargetState', stateText);
-	accessory.logState();
 
 	if (callback !== undefined) {
 		// return plugin obj's currentState value
@@ -252,8 +238,6 @@ YaleSmartLockAccessory.prototype.setState = function(state, callback) {
 	}
 	
 	var stateText = (state == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
-	accessory.log('CALL', 'setState', state, stateText);
-	accessory.logState();
 
 	//accessory.services.LockMechanism
 	//.setCharacteristic(Characteristic.LockTargetState, state);
@@ -280,7 +264,6 @@ YaleSmartLockAccessory.prototype.setTargetState = function(state, callback) {
 	var stateText = (state == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
 
 	accessory.log('CALL','setTargetState',state, stateText);
-	//accessory.logState();
 
 //	accessory.services.LockMechanism
 //	.setCharacteristic(Characteristic.LockTargetState, state);
@@ -311,8 +294,6 @@ YaleSmartLockAccessory.prototype.stateChange = function(context) {
 	var accessory = this;
 	
 	accessory.log('CALL','stateChange','oldValue',context.oldValue,'newValue',context.newValue);
-	accessory.logState();
-	accessory.logSecurityState();
 
 	accessory.currentState = context.newValue;
 	var secState;
@@ -348,7 +329,6 @@ YaleSmartLockAccessory.prototype.disarmHandler = function() {
 YaleSmartLockAccessory.prototype.getSecurityState = function(callback) {
 	var accessory = this;
 	accessory.log('CALL','getSecurityState');
-	accessory.logSecurityState();
 	
 	// check plugin currentState
 //	if (accessory.currentState === Characteristic.LockCurrentState.SECURED) {
@@ -371,7 +351,6 @@ YaleSmartLockAccessory.prototype.getSecurityState = function(callback) {
 YaleSmartLockAccessory.prototype.getTargetSecurityState = function(callback) {
 	var accessory = this;
 	accessory.log('CALL','getTargetSecurityState');
-	accessory.logSecurityState();
 
 	if (callback !== undefined) {
 		// return plugin obj's currentSecurityState value
@@ -388,7 +367,6 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 	var accessory = this;
 	var stateText = (state == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
 	accessory.log('CALL','setTargetSecurityState',state,stateText);
-	accessory.logSecurityState();
 
     if (state === null) {
         accessory.log('[ERROR]','param state value invalid',state);
@@ -433,6 +411,9 @@ YaleSmartLockAccessory.prototype.statusEventHandler = function() {
 		if (accessory.targetState !== null) {
 			if (accessory.targetState === accessory.currentState) {
 				accessory.log('INFO', 'targetState completed');
+				accessory.services.LockMechanism
+				.setCharacteristic(Characteristic.LockCurrentState, 
+						accessory.currentState);
 			} else {
 				accessory.log('INFO','targetState different, go for target');
 	        	accessory.services.LockMechanism
@@ -446,6 +427,9 @@ YaleSmartLockAccessory.prototype.statusEventHandler = function() {
 		if (accessory.targetSecurityState !== null) {
 			if (accessory.targetSecurityState === accessory.currentSecurityState) {
 				accessory.log('INFO', 'targetSecurityState completed');
+				accessory.services.LockMechanism
+				.setCharacteristic(Characteristic.SecuritySystemCurrentState, 
+						accessory.currentSecurityState);
 			} else {
 				accessory.log('INFO','targetSecurityState different, go for target');
 		        accessory.services.SecuritySystem
