@@ -36,11 +36,11 @@ function YaleSmartLockAccessory(log, config, api) {
     accessory.accessoryName = ACCESSORY_NAME;
     accessory.Characteristic = Characteristic;
     accessory.smartlock = new YaleSmartLock(accessory);
-    accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
-    accessory.targetState = Characteristic.LockTargetState.UNSECURED;
+    accessory.DEFAULT_ARMMED_STATE = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+    accessory.currentState = Characteristic.LockCurrentState.UNKNOWN;
+    accessory.targetState = Characteristic.LockTargetState.SECURED;
     accessory.currentSecurityState = Characteristic.SecuritySystemCurrentState.DISARMED;
-    accessory.targetSecurityState = Characteristic.SecuritySystemTargetState.DISARM;
-    accessory.DEFAULT_ARMMED_STATE = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+    accessory.targetSecurityState = accessory.DEFAULT_ARMMED_STATE;
 
 
 
