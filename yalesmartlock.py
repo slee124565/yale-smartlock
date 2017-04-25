@@ -455,7 +455,7 @@ it waits for the next connect.
                     pass
                 else:
                     logger.warning('serial connect lost')
-                    raise
+                    raise KeyboardInterrupt
             
             for t in client_threads:
                 if t.stopped():
