@@ -380,20 +380,22 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
     if (state === null) {
         accessory.log('[ERROR]','param state value invalid',state);
     } else {
- 	if (state === Characteristic.SecuritySystemTargetState.STAY_ARM ||
-			state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
-			state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
-		
-		if (accessory.currentState !== Characteristic.LockCurrentState.SECURED) {
-			accessory.log('INFO','start to lock ...');
-			accessory.smartlock.lock();
-		} else {
-			accessory.log('INFO','already locked');
+	 	if (state === Characteristic.SecuritySystemTargetState.STAY_ARM ||
+				state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
+				state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
+			
+			if (accessory.currentState !== Characteristic.LockCurrentState.SECURED) {
+				accessory.log('INFO','start to lock ...');
+				accessory.smartlock.lock();
+			} else {
+				accessory.log('INFO','already locked');
+			}
+		} else if (state === Characteristic.SecuritySystemTargetState.DISARMED) {
+			accessory.log('INFO','start to unlock ...');
+			accessory.smartlock.unlock();
 		}
-	} else if (state === Characteristic.SecuritySystemTargetState.DISARMED) {
-		accessory.log('INFO','start to unlock ...');
-		accessory.smartlock.unlock();
-	}
+	 	accessory.services.SecuritySystem
+		.setCharacteristic(Characteristic.SecuritySystemTargetState, state);
     }
 	
 	if (callback !== undefined) {
