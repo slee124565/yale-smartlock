@@ -106,22 +106,30 @@ function YaleSmartLockAccessory(log, config, api) {
         }
 
         if (request.url === "/yale/event/locked") {
-        	accessory.log('EVENT', 'locked');
         	
-        	accessory.services.LockMechanism
-        	.setCharacteristic(Characteristic.LockTargetState, 
-        			Characteristic.LockTargetState.SECURED);
+        	if (accessory.targetState !== Characteristic.LockTargetState.SECURED) {
+            	accessory.log('EVENT', 'locked');
+	        	accessory.services.LockMechanism
+	        	.setCharacteristic(Characteristic.LockTargetState, 
+	        			Characteristic.LockTargetState.SECURED);
+        	} else {
+            	accessory.log('DEBUG', 'event locked, ignore');
+        	}
         	
             response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");
         }
 
         if (request.url === "/yale/event/unlocked") {
-        	accessory.log('EVENT', 'unlocked');
         	
-        	accessory.services.LockMechanism
-        	.setCharacteristic(Characteristic.LockTargetState, 
-        			Characteristic.LockTargetState.UNSECURED);
+        	if (accessory.targetState !== Characteristic.LockTargetState.UNSECURED) {
+            	accessory.log('EVENT', 'unlocked');
+	        	accessory.services.LockMechanism
+	        	.setCharacteristic(Characteristic.LockTargetState, 
+	        			Characteristic.LockTargetState.UNSECURED);
+        	} else {
+            	accessory.log('DEBUG', 'event unlocked, ignore');
+        	}
 
         	response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");
