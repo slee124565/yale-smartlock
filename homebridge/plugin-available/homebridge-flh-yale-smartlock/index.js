@@ -373,7 +373,14 @@ YaleSmartLockAccessory.prototype.getTargetSecurityState = function(callback) {
 
 YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callback) {
 	var accessory = this;
-	var stateText = (state == Characteristic.SecuritySystemTargetState.DISARM) ? "disarmed" : "arm";
+	var stateText = '';
+	if (state === Characteristic.SecuritySystemTargetState.DISARM) {
+		stateText = 'disarmed';
+	} else if (state === Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
+		stateText = 'alarmTriggered';
+	} else {
+		stateText = 'armed';
+	}
 	accessory.log('CALL','setTargetSecurityState',state,stateText);
 
     if (state === null) {
@@ -383,8 +390,10 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 				state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
 				state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
 			accessory.targetState = Characteristic.LockTargetState.SECURED;
-		} else { //if (state === Characteristic.SecuritySystemTargetState.DISARM) {
+		} else if (state === Characteristic.SecuritySystemTargetState.DISARM) {
 			accessory.targetState = Characteristic.LockTargetState.UNSECURED;
+		} else {
+			accessory.log('[DEBUG]','alarm triggered, targetState not change');
 		}
 	 	accessory.targetSecurityState = state;
 		accessory.log('[DEBUG]','targetState set to', accessory.targetState);
