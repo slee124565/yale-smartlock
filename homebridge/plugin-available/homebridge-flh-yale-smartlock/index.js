@@ -383,7 +383,7 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 				state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
 				state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
 			accessory.targetState = Characteristic.LockTargetState.SECURED;
-		} else if (state === Characteristic.SecuritySystemTargetState.DISARM) {
+		} else { //if (state === Characteristic.SecuritySystemTargetState.DISARM) {
 			accessory.targetState = Characteristic.LockTargetState.UNSECURED;
 		}
 	 	accessory.targetSecurityState = state;
