@@ -348,7 +348,7 @@ YaleSmartLockAccessory.prototype.getSecurityState = function(callback) {
 	if (callback !== undefined) {
 		// return plugin obj's currentSecurityState value
         var stateText =
-            (accessory.currentSecurityState == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
+            (accessory.currentSecurityState == Characteristic.SecuritySystemTargetState.DISARM) ? "disarmed" : "arm";
         accessory.log('INFO','plugin currentSecurityState',accessory.currentSecurityState,stateText);
 		callback(null,accessory.currentSecurityState);
 	} else {
@@ -363,7 +363,7 @@ YaleSmartLockAccessory.prototype.getTargetSecurityState = function(callback) {
 	if (callback !== undefined) {
 		// return plugin obj's currentSecurityState value
 		var stateText = 
-			(accessory.targetSecurityState == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
+			(accessory.targetSecurityState == Characteristic.SecuritySystemTargetState.DISARM) ? "disarmed" : "arm";
 		accessory.log('INFO','plugin targetSecurityState',accessory.targetSecurityState,stateText);
 		callback(null,accessory.targetSecurityState);
 	} else {
@@ -373,7 +373,7 @@ YaleSmartLockAccessory.prototype.getTargetSecurityState = function(callback) {
 
 YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callback) {
 	var accessory = this;
-	var stateText = (state == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
+	var stateText = (state == Characteristic.SecuritySystemTargetState.DISARM) ? "disarmed" : "arm";
 	accessory.log('CALL','setTargetSecurityState',state,stateText);
 
     if (state === null) {
@@ -383,7 +383,7 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 				state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
 				state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
 			accessory.targetState = Characteristic.LockTargetState.SECURED;
-		} else if (state === Characteristic.SecuritySystemTargetState.DISARMED) {
+		} else if (state === Characteristic.SecuritySystemTargetState.DISARM) {
 			accessory.targetState = Characteristic.LockTargetState.UNSECURED;
 		}
 	 	accessory.targetSecurityState = state;
