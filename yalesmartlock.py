@@ -119,7 +119,7 @@ class SerialQueueThread(threading.Thread):
         while True:
             cmd = ''
             try:
-                cmd = self.queue.get(timeout=1)
+                cmd = self.queue.get(timeout=settings.YALE_STATUS_POLL_TIME_PERIOD)
                 cmd = cmd.replace('\r\n','')
                 logger.debug('recv queue cmd: %s' % cmd)
                 if not self.ser is None:
@@ -145,6 +145,7 @@ class SerialQueueThread(threading.Thread):
 
             except Queue.Empty:
                 #logger.debug('serial cmd queue recv timeout')
+                self.queue.put('status')
                 pass
             finally:
                 if self.stopped():
@@ -216,28 +217,49 @@ class SerialToNet(serial.threaded.Protocol):
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_PIN)],YALE_DATA_UNLOCK_BY_PIN) == 0:
                 logger.info('DDL event => unlock by pin code')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'unlock/pin'
                 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_IBUTTON)],YALE_DATA_UNLOCK_BY_IBUTTON) == 0:
                 logger.info('DDL event => unlock by ibutton')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'unlock/ibutton'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_FINGERPRINT)],YALE_DATA_UNLOCK_BY_FINGERPRINT) == 0:
                 logger.info('DDL event => unlock by fingerprint')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'status/fingerprint'
 
             if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
                 logger.info('DDL event => unlock by card')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
-                    evt_name = 'status/unlocked'
+                    evt_name = 'event/unlocked'
+                else:
+                    evt_name = 'status/card'
+
+            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0:
+                logger.info('DDL event => unlocked by key')
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
+                    evt_name = 'event/unlocked'
+                else:
+                    evt_name = 'status/key_auto'
+
+            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0:
+                logger.info('DDL event => locked by key or auto')
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
+                    evt_name = 'event/locked'
+                else:
+                    evt_name = 'status/key_auto'
+
+            if cmp(data_frame[:len(YALE_DATA_UNLOCK_BY_CARD)],YALE_DATA_UNLOCK_BY_CARD) == 0:
+                logger.info('DDL event => unlock by card')
+                if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
+                    evt_name = 'event/unlocked'
                 else:
                     evt_name = 'status/card'
 
@@ -269,17 +291,14 @@ class SerialToNet(serial.threaded.Protocol):
                 else:
                     evt_name = 'alarm_clear'
                 
-                
-            if cmp(data_frame[:len(YALE_STATE_LOCKED)],YALE_STATE_LOCKED) == 0 or \
-                cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
+            if cmp(data_frame[:len(YALE_STATE_LOCK_RESP)],YALE_STATE_LOCK_RESP) == 0:
                 logger.info('DDL status => locked')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/locked'
                 else:
                     evt_name = 'status/locked'
                 
-            if cmp(data_frame[:len(YALE_STATE_UNLOCKED)],YALE_STATE_UNLOCKED) == 0 or \
-                cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
+            if cmp(data_frame[:len(YALE_STATE_UNLOCK_RESP)],YALE_STATE_UNLOCK_RESP) == 0:
                 logger.info('DDL status => unlocked')
                 if settings.YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT:
                     evt_name = 'status/unlocked'
@@ -410,6 +429,7 @@ it waits for the next connect.
     
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.settimeout(1)
     srv.bind(('', args.localport))
     srv.listen(2)
 
@@ -417,21 +437,30 @@ it waits for the next connect.
     
     try:
         intentional_exit = False
+        logger.info('Waiting for connection on {}...\n'.format(args.localport))
         while True:
-            logger.info('Waiting for connection on {}...\n'.format(args.localport))
-            client_socket, addr = srv.accept()
-            logger.info('Connected by {}\n'.format(addr))
-            
-            client_thread = SocketClientThread()
-            client_thread.client_socket = client_socket
-            client_thread.client_ip = addr[0]
-            client_thread.start()
-            client_threads.append(client_thread)
+            try:
+                #logger.info('Waiting for connection on {}...\n'.format(args.localport))
+                client_socket, addr = srv.accept()
+                logger.info('Connected by {}\n'.format(addr))
+                
+                client_thread = SocketClientThread()
+                client_thread.client_socket = client_socket
+                client_thread.client_ip = addr[0]
+                client_thread.start()
+                client_threads.append(client_thread)
+            except socket.timeout:
+                #logger.debug('sck serv accept timeout, check serial connnection')
+                if ser_to_net.connected:
+                    pass
+                else:
+                    logger.warning('serial connect lost')
+                    raise KeyboardInterrupt
             
             for t in client_threads:
                 if t.stopped():
                     logger.debug('remove stopped client sck thread (%s)' % t.client_ip)
-                    del t
+                    client_threads.remove(t)
             
     except KeyboardInterrupt:
         pass
@@ -451,4 +480,4 @@ it waits for the next connect.
         t.join()
 
     logger.warning('--- exit ---')
-
+    sys.exit(1)

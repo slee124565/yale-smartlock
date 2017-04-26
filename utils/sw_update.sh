@@ -11,7 +11,7 @@ fi
 if [ -d "${dest_path}" ]; then
     cd ${dest_path}
     git_branch=$(git rev-parse --abbrev-ref HEAD)
-    git checkout -f && git clean -fx -d && git checkout ${git_branch} && git pull origin ${git_branch}
+    git checkout -f && git checkout ${git_branch} && git pull origin ${git_branch}
     cd -
 fi
 

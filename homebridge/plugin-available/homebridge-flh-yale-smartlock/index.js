@@ -36,6 +36,13 @@ function YaleSmartLockAccessory(log, config, api) {
     accessory.accessoryName = ACCESSORY_NAME;
     accessory.Characteristic = Characteristic;
     accessory.smartlock = new YaleSmartLock(accessory);
+    accessory.DEFAULT_ARMMED_STATE = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+    accessory.currentState = Characteristic.LockCurrentState.UNKNOWN;
+    accessory.targetState = Characteristic.LockTargetState.SECURED;
+    accessory.currentSecurityState = Characteristic.SecuritySystemCurrentState.DISARMED;
+    accessory.targetSecurityState = accessory.DEFAULT_ARMMED_STATE;
+
+
 
     accessory.services = {};
     
@@ -79,43 +86,80 @@ function YaleSmartLockAccessory(log, config, api) {
         }
 
         if (request.url === "/yale/status/locked") {
-        	if (accessory.smartlock.currentState != Characteristic.LockCurrentState.SECURED) {
-	        	accessory.log('yale event handle: locked');
-        		//accessory.log('yale status changed');
-	        	accessory.smartlock.currentState = Characteristic.LockCurrentState.SECURED;
-	        	//accessory.setState(Characteristic.LockCurrentState.SECURED);
-	        	accessory.setTargetState(Characteristic.LockTargetState.SECURED);
-        	} else {
-        		//accessory.log('yale event status locked, no change skip');
-        	}
+        	accessory.log('STATUS', 'locked');
+
+        	accessory.currentState = Characteristic.LockCurrentState.SECURED;
+        	accessory.statusEventHandler();
+        	
             response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");
         }
 
         if (request.url === "/yale/status/unlocked") {
-        	if (accessory.smartlock.currentState != Characteristic.LockCurrentState.UNSECURED) {
-	        	accessory.log('yale event handle: unlocked');
-        		//accessory.log('yale status changed');
-	        	accessory.smartlock.currentState = Characteristic.LockCurrentState.UNSECURED;
-	        	//accessory.setState(Characteristic.LockCurrentState.UNSECURED);
-	        	accessory.setTargetState(Characteristic.LockTargetState.UNSECURED);
+        	accessory.log('STATUS', 'unlocked');
+        	
+        	accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
+        	accessory.statusEventHandler();
+
+        	response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end("yale event handled\n");
+        }
+
+        if (request.url === "/yale/event/locked") {
+        	
+        	if (accessory.targetState !== Characteristic.LockTargetState.SECURED) {
+            	accessory.log('EVENT', 'locked');
+            	//accessory.currentState = Characteristic.LockCurrentState.SECURED;
+	        	accessory.services.LockMechanism
+	        	.setCharacteristic(Characteristic.LockTargetState, 
+	        			Characteristic.LockTargetState.SECURED);
         	} else {
-        		//accessory.log('yale event status unlocked, no change skip');
+            	accessory.log('DEBUG', 'event locked, ignore');
+            	accessory.statusEventHandler();
         	}
+        	
             response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");
         }
 
+        if (request.url === "/yale/event/unlocked") {
+        	
+        	if (accessory.targetState !== Characteristic.LockTargetState.UNSECURED) {
+            	accessory.log('EVENT', 'unlocked');
+            	//accessory.currentState = Characteristic.LockCurrentState.UNSECURED;
+	        	accessory.services.LockMechanism
+	        	.setCharacteristic(Characteristic.LockTargetState, 
+	        			Characteristic.LockTargetState.UNSECURED);
+        	} else {
+            	accessory.log('DEBUG', 'event unlocked, ignore');
+            	if (accessory.currentSecurityState 
+            			=== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
+                	accessory.disarmHandler();
+            	} else {
+	            	accessory.statusEventHandler();
+            	}
+        	}
+
+        	response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end("yale event handled\n");
+        }
+
         if (request.url === "/yale/alarm") {
-        	accessory.log('yale event handle: alarm');
-        	accessory.setTargetSecurityState(Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
+        	accessory.log('EVENT', 'alarm');
+
+        	accessory.services.SecuritySystem
+        	.setCharacteristic(Characteristic.SecuritySystemTargetState, 
+        			Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
+
             response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");
         }
 
         if (request.url === "/yale/alarm_clear") {
-        	accessory.log('yale event handle: alarm clear');
-        	accessory.setTargetSecurityState(Characteristic.SecuritySystemCurrentState.DISARMED);
+        	accessory.log('EVENT', 'alarm clear');
+
+        	accessory.disarmHandler();
+        	
             response.writeHead(200, {"Content-Type": "text/plain"});
             response.end("yale event handled\n");
         }
@@ -145,8 +189,8 @@ function YaleSmartLockAccessory(log, config, api) {
     
     service
       .getCharacteristic(Characteristic.LockTargetState)
-      .on('get', accessory.getState.bind(accessory))
-      .on('set', accessory.setState.bind(accessory));
+      .on('get', accessory.getTargetState.bind(accessory))
+      .on('set', accessory.setTargetState.bind(accessory));
     
     accessory.services['LockMechanism'] = service;
     accessory.log('accessory config service:','LockMechanism')
@@ -160,21 +204,14 @@ function YaleSmartLockAccessory(log, config, api) {
   
 	service
 	    .getCharacteristic(Characteristic.SecuritySystemTargetState)
-	    .on('get', accessory.getSecurityState.bind(accessory))
-	    .on('set', accessory.setSecurityState.bind(accessory));
+	    .on('get', accessory.getTargetSecurityState.bind(accessory))
+	    .on('set', accessory.setTargetSecurityState.bind(accessory));
 	
-	service
-    .getCharacteristic(Characteristic.Name)
-    .on('get', accessory.getSecuritySystemName.bind(accessory));
-	
-    
     accessory.services['SecuritySystem'] = service;
     accessory.log('accessory config service:','SecuritySystem')
     
-    //-> start polling yale status
-    //accessory.smartlock.setupSckClient();
-    accessory.smartlock.checkLockCurrentState();
-    //setInterval( function() { accessory.smartlock.checkLockCurrentState(); } , 10 * 1000);
+    //-> yale status initial check
+    //accessory.smartlock.checkLockCurrentState();
 
 };
 
@@ -189,29 +226,39 @@ YaleSmartLockAccessory.prototype.smartlockDisconnect = function() {
 
 YaleSmartLockAccessory.prototype.getState = function(callback) {
 	var accessory = this;
+	
+	// return plugin obj's currentState value
+	var stateText = 
+		(accessory.currentState == Characteristic.LockCurrentState.SECURED) ? "lock" : "unlock";
 
-	var state = accessory.smartlock.getLockCurrentState();
-    var stateText = (state == Characteristic.LockCurrentState.SECURED) ? "lock" : "unlock";
+	accessory.log('CALL', 'getState', accessory.currentState, stateText);
 
-	accessory.log('accessor',accessory.name,'getState',stateText);
+	accessory.smartlock.checkLockCurrentState();
 
-	if (callback !== undefined) {
+    if (callback !== undefined) {
 		//accessory.log('accessory getState callback is not undefined');
-		callback(null,state);
+		callback(null,accessory.currentState);
 	} else {
-		accessory.log('accessory getState callback is undefined');
+		accessory.log('WARNING', 'accessory getState callback is undefined, skip');
 	}
+
 };
 
-YaleSmartLockAccessory.prototype.setTargetState = function(state) {
+YaleSmartLockAccessory.prototype.getTargetState = function(callback) {
 	var accessory = this;
-	var stateText = (state == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
 
-	accessory.log('accessor',accessory.name,'setTargetState',stateText);
+	var stateText = 
+		(accessory.targetState == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
 
-	accessory.services.LockMechanism
-	.setCharacteristic(Characteristic.LockTargetState, state);
-}
+	accessory.log('CALL', 'getTargetState', accessory.targetState, stateText);
+
+	if (callback !== undefined) {
+		// return plugin obj's currentState value
+		callback(null,accessory.targetState);
+	} else {
+		accessory.log('WARNING', 'accessory getTargetState callback is undefined, skip');
+	}
+};
 
 YaleSmartLockAccessory.prototype.setState = function(state, callback) {
 	var accessory = this;
@@ -224,119 +271,226 @@ YaleSmartLockAccessory.prototype.setState = function(state, callback) {
 	}
 	
 	var stateText = (state == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
-//	accessory.log('accessor',accessory.name,'setState',stateText);
 
 	//accessory.services.LockMechanism
 	//.setCharacteristic(Characteristic.LockTargetState, state);
 	
 	if (accessory.smartlock.setLockState(state)) {
-		accessory.log('accessor',accessory.name,'setState',stateText,'success');
-		accessory.services.LockMechanism
-		.setCharacteristic(Characteristic.LockCurrentState, state);
+//		accessory.services.LockMechanism
+//		.setCharacteristic(Characteristic.LockCurrentState, state);
 		if (callback !== undefined) {
-			//accessory.log('accessory getState callback is not undefined');
 			callback(null);
 		} else {
-			accessory.log('accessory getState callback is undefined');
-			
+			accessory.log('WARNING', 'setState callback is undefined, skip');
 		}
 		
 	} else {
-		accessory.log('accessor',accessory.name,'setState',stateText,'fail');
+		accessory.log('ERROR', 'smartlock.setLockState fail');
 		if (callback !== undefined) {
 			callback(new Error("Error: " + accessory.name + " setState " + state));
 		}
 	}
-
 };
+
+YaleSmartLockAccessory.prototype.setTargetState = function(state, callback) {
+	var accessory = this;
+	
+	//-> state value from siri
+	if (state === true) {
+		state = Characteristic.LockTargetState.SECURED;
+	} else if (state === false) {
+		state = Characteristic.LockTargetState.UNSECURED;
+	}
+	var stateText = (state == Characteristic.LockTargetState.SECURED) ? "lock" : "unlock";
+
+	accessory.log('CALL','setTargetState',state, stateText);
+
+//	accessory.services.LockMechanism
+//	.setCharacteristic(Characteristic.LockTargetState, state);
+
+	accessory.targetState = state;
+	if (stateText === 'lock') {
+		accessory.targetSecurityState = accessory.DEFAULT_ARMMED_STATE;
+	} else {
+		accessory.targetSecurityState = Characteristic.SecuritySystemTargetState.DISARM;
+	}
+    accessory.log('INFO','set',
+    		'targetState',accessory.targetState,'targetSecurityState',accessory.targetSecurityState);
+
+    if (accessory.targetState !== accessory.currentState) {
+		accessory.setState(state,callback);
+	} else {
+		accessory.log('INFO','targetState == currentState, skip');
+		//accessory.smartlock.checkLockCurrentState();
+        if (callback !== undefined) {
+            callback(null);
+        } else {
+            accessory.log('WARNING', 'setTargetState callback is undefined, skip');
+        }
+    }
+}
 
 YaleSmartLockAccessory.prototype.stateChange = function(context) {
 	var accessory = this;
 	
-	accessory.log('stateChange','oldValue',context.oldValue,'newValue',context.newValue);
+	accessory.log('CALL','stateChange','oldValue',context.oldValue,'newValue',context.newValue);
 
+	accessory.currentState = context.newValue;
+	var secState;
 	if (context.newValue === Characteristic.LockCurrentState.SECURED) {
-		accessory.log('lock is secured, set armed');
-		accessory.setTargetSecurityState(Characteristic.SecuritySystemCurrentState.AWAY_ARM);
+		accessory.log('INFO', 'lock is secured, set security system arm');
+		secState = accessory.DEFAULT_ARMMED_STATE;
 	} else {
-		accessory.log('lock is not secured, set disarmed');
-		accessory.setTargetSecurityState(Characteristic.SecuritySystemCurrentState.DISARMED);
+		accessory.log('INFO', 'lock is not secured, set security system disarm');
+		secState = Characteristic.SecuritySystemTargetState.DISARM;
 	}
+    accessory.services.SecuritySystem
+	.setCharacteristic(Characteristic.SecuritySystemTargetState, 
+			secState);
+}
 
+YaleSmartLockAccessory.prototype.disarmHandler = function() {
+	var accessory = this;
+	accessory.log('CALL','disarmHandler');
+	
+	if (accessory.currentState === Characteristic.LockCurrentState.SECURED) {
+		accessory.log('INFO', 'lock is secured, set armed');
+        accessory.services.SecuritySystem
+		.setCharacteristic(Characteristic.SecuritySystemTargetState, 
+				accessory.DEFAULT_ARMMED_STATE);
+	} else {
+		accessory.log('INFO', 'lock is not secured, set disarmed');
+        accessory.services.SecuritySystem
+		.setCharacteristic(Characteristic.SecuritySystemTargetState, 
+				Characteristic.SecuritySystemCurrentState.DISARMED);
+	}
 }
 
 YaleSmartLockAccessory.prototype.getSecurityState = function(callback) {
 	var accessory = this;
-
-	var state = accessory.smartlock.getSecurityState();
-    var stateText = (state == Characteristic.SecuritySystemCurrentState.DISARMED) ? "disarmed" : "armed";
-	var err = null;
+	accessory.log('CALL','getSecurityState');
 	
-	accessory.log('accessor',accessory.name,'getSecurityState',stateText);
+	// check plugin currentState
+//	if (accessory.currentState === Characteristic.LockCurrentState.SECURED) {
+//		accessory.currentSecurityState = accessory.DEFAULT_ARMMED_STATE;
+//	} else {
+//		accessory.currentSecurityState = Characteristic.SecuritySystemCurrentState.DISARMED;
+//	}
+	
 	if (callback !== undefined) {
-		//accessory.log('accessory getSecurityState callback is not undefined');
-		callback(err,state);
+		// return plugin obj's currentSecurityState value
+        var stateText =
+            (accessory.currentSecurityState == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
+        accessory.log('INFO','plugin currentSecurityState',accessory.currentSecurityState,stateText);
+		callback(null,accessory.currentSecurityState);
 	} else {
-		accessory.log('accessory getSecurityState callback is undefined');
+		accessory.log('WARNING', 'accessory getSecurityState callback is undefined, skip');
 	}
 };
 
-YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state) {
+YaleSmartLockAccessory.prototype.getTargetSecurityState = function(callback) {
 	var accessory = this;
-	var stateText = (state == Characteristic.SecuritySystemTargetState.DISARM) ? "disarm" : "arm";
+	accessory.log('CALL','getTargetSecurityState');
 
-	accessory.log('accessor',accessory.name,'setTargetSecurityState',stateText,'code',state);
-
-	accessory.services.SecuritySystem
-	.setCharacteristic(Characteristic.SecuritySystemTargetState, state);
+	if (callback !== undefined) {
+		// return plugin obj's currentSecurityState value
+		var stateText = 
+			(accessory.targetSecurityState == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
+		accessory.log('INFO','plugin targetSecurityState',accessory.targetSecurityState,stateText);
+		callback(null,accessory.targetSecurityState);
+	} else {
+		accessory.log('WARNING', 'accessory getSecurityState callback is undefined, skip');
+	}
 }
 
-YaleSmartLockAccessory.prototype.setSecurityState = function(state,callback) {
+YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callback) {
 	var accessory = this;
-	var stateText = (state == Characteristic.SecuritySystemCurrentState.DISARMED) ? "disarmed" : "arm";
+	var stateText = (state == Characteristic.SecuritySystemTargetState.DISARMED) ? "disarmed" : "arm";
+	accessory.log('CALL','setTargetSecurityState',state,stateText);
 
-	if (accessory.smartlock.setSecurityState(state)) {
-		accessory.log('accessor',accessory.name,'setSecurityState',stateText,'success');
-		accessory.services.SecuritySystem
+    if (state === null) {
+        accessory.log('[ERROR]','param state value invalid',state);
+    } else {
+	 	if (state === Characteristic.SecuritySystemTargetState.STAY_ARM ||
+				state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
+				state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
+			accessory.targetState = Characteristic.LockTargetState.SECURED;
+			if (accessory.currentState !== Characteristic.LockCurrentState.SECURED) {
+				accessory.log('INFO','start to lock ...');
+				accessory.smartlock.lock();
+			} else {
+				accessory.log('INFO','already locked');
+			}
+		} else if (state === Characteristic.SecuritySystemTargetState.DISARMED) {
+			accessory.targetState = Characteristic.LockTargetState.UNSECURED;
+			accessory.log('INFO','start to unlock ...');
+			accessory.smartlock.unlock();
+		}
+	 	accessory.targetSecurityState = state;
+        accessory.services.SecuritySystem
 		.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
-		if (callback !== undefined) {
-			callback(null);
+        accessory.currentSecurityState = state;
+    }
+	
+	if (callback !== undefined) {
+		callback(null);
+	} else {
+		accessory.log('WARNING', 'setSecurityState callback is undefined, skip');
+	}
+	accessory.log('INFO','currSecState',accessory.currentSecurityState,
+			'tarSecState',accessory.targetSecurityState);
+}
+
+YaleSmartLockAccessory.prototype.statusEventHandler = function() {
+	var accessory = this;
+	accessory.log('CALL', 'statusEventHandler');
+	
+	if (accessory.currentSecurityState 
+			=== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
+		accessory.log('WARNING','alarm triggered, skip status event process');
+	} else {
+		if (accessory.targetState !== null) {
+			if (accessory.targetState === accessory.currentState) {
+				accessory.log('INFO', 'targetState completed');
+				accessory.services.LockMechanism
+				.setCharacteristic(Characteristic.LockCurrentState, 
+						accessory.currentState);
+			} else {
+				accessory.log('INFO','targetState different, go for target');
+	        	accessory.services.LockMechanism
+	        	.setCharacteristic(Characteristic.LockTargetState, 
+	        			accessory.targetState);
+			}
 		} else {
-			accessory.log('accessory setSecurityState callback is undefined');
-			
+			accessory.log('DEBUG','targetState value null, skip');
 		}
 		
-	} else {
-		accessory.log('accessor',accessory.name,'setSecurityState',stateText,'fail');
-		if (callback !== undefined) {
-			callback(new Error("Error: " + accessory.name + " setSecurityState " + state));
+		if (accessory.targetSecurityState !== null) {
+			if (accessory.targetSecurityState === accessory.currentSecurityState) {
+				accessory.log('INFO', 'targetSecurityState completed');
+//				accessory.services.LockMechanism
+//				.setCharacteristic(Characteristic.SecuritySystemCurrentState, 
+//						accessory.currentSecurityState);
+			} else {
+				accessory.log('INFO','targetSecurityState different, go for target');
+		        accessory.services.SecuritySystem
+				.setCharacteristic(Characteristic.SecuritySystemTargetState, 
+						accessory.targetSecurityState);
+			}
+		} else {
+			accessory.log('DEBUG','targetSecurityState value null, skip');
 		}
 	}
-
 }
-
-YaleSmartLockAccessory.prototype.getSecuritySystemName = function(callback) {
-	var accessory = this;
-	var err = null;
-	var name = 'test';
-	accessory.log('accessor',accessory.name,'getSecuritySystemName',name);
-	if (callback !== undefined) {
-		callback(err,name);
-	} else {
-		accessory.log('accessory getSecuritySystemName callback is undefined');
-	}
-	
-};
-
 
 YaleSmartLockAccessory.prototype.getServices = function() {
 	var accessory = this;
-	accessory.log('accessory getServices ...');
+	accessory.log('CALL', 'getServices');
 
 	var t_list = [];
 	for (var key in accessory.services) {
 		t_list.push(accessory.services[key]);
-		accessory.log('accessory has service', key);
+		accessory.log('INFO','accessory has service', key);
 	}	
 	
 	return t_list;
