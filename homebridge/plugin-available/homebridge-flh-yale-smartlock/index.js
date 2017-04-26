@@ -390,7 +390,7 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 		accessory.log('[DEBUG]','targetState set to', accessory.targetState);
 		accessory.log('[DEBUG]','targetSecurityState set to', accessory.targetSecurityState);
 	    accessory.services.LockMechanism
-		.setCharacteristic(Characteristic.LockCurrentState, accessory.targetState);
+		.setCharacteristic(Characteristic.LockTargetState, accessory.targetState);
 //		if (accessory.targetState === Characteristic.LockTargetState.SECURED) {
 //			accessory.smartlock.lock();
 //		} else {
