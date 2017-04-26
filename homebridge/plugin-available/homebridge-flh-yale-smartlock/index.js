@@ -396,9 +396,9 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 //		} else {
 //			accessory.smartlock.unlock();
 //		}
-//		accessory.services.SecuritySystem
-//		.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
-//        accessory.currentSecurityState = state;
+		accessory.services.SecuritySystem
+		.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
+        accessory.currentSecurityState = state;
     }
 	
 	if (callback !== undefined) {
