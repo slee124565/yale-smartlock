@@ -52,6 +52,28 @@ function YaleSmartLockAccessory(log, config, api) {
 
     accessory.requestServer = http.createServer(function(request, response) {
     	
+        if (request.url === "/api/yale/lock") {
+        	accessory.log('ACTION', 'lock');
+
+        	accessory.services.LockMechanism
+        	.setCharacteristic(Characteristic.LockTargetState, 
+        			Characteristic.LockTargetState.SECURED);
+        	
+            response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end("yale action lock\n");
+        }
+
+        if (request.url === "/api/yale/unlock") {
+        	accessory.log('ACTION', 'unlock');
+
+        	accessory.services.LockMechanism
+        	.setCharacteristic(Characteristic.LockTargetState, 
+        			Characteristic.LockTargetState.UNSECURED);
+        	
+            response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end("yale action unlock\n");
+        }
+
         if (request.url === "/yale/status/locked") {
         	accessory.log('STATUS', 'locked');
 
