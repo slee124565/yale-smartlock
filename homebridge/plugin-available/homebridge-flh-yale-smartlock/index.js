@@ -414,7 +414,7 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 	 	if (state === Characteristic.SecuritySystemTargetState.STAY_ARM ||
 				state === Characteristic.SecuritySystemTargetState.AWAY_ARM ||
 				state === Characteristic.SecuritySystemTargetState.NIGHT_ARM) {
-			
+			accessory.targetState = Characteristic.LockTargetState.SECURED;
 			if (accessory.currentState !== Characteristic.LockCurrentState.SECURED) {
 				accessory.log('INFO','start to lock ...');
 				accessory.smartlock.lock();
@@ -422,6 +422,7 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 				accessory.log('INFO','already locked');
 			}
 		} else if (state === Characteristic.SecuritySystemTargetState.DISARMED) {
+			accessory.targetState = Characteristic.LockTargetState.UNSECURED;
 			accessory.log('INFO','start to unlock ...');
 			accessory.smartlock.unlock();
 		}
