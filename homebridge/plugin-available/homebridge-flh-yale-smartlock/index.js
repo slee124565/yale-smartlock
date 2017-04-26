@@ -389,14 +389,16 @@ YaleSmartLockAccessory.prototype.setTargetSecurityState = function(state, callba
 	 	accessory.targetSecurityState = state;
 		accessory.log('[DEBUG]','targetState set to', accessory.targetState);
 		accessory.log('[DEBUG]','targetSecurityState set to', accessory.targetSecurityState);
-		if (accessory.targetState === Characteristic.LockTargetState.SECURED) {
-			accessory.smartlock.lock();
-		} else {
-			accessory.smartlock.unlock();
-		}
-		accessory.services.SecuritySystem
-		.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
-        accessory.currentSecurityState = state;
+	    accessory.services.LockMechanism
+		.setCharacteristic(Characteristic.LockCurrentState, accessory.targetState);
+//		if (accessory.targetState === Characteristic.LockTargetState.SECURED) {
+//			accessory.smartlock.lock();
+//		} else {
+//			accessory.smartlock.unlock();
+//		}
+//		accessory.services.SecuritySystem
+//		.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
+//        accessory.currentSecurityState = state;
     }
 	
 	if (callback !== undefined) {
