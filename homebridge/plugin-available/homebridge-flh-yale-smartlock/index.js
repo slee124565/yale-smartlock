@@ -445,6 +445,11 @@ YaleSmartLockAccessory.prototype.statusEventHandler = function() {
 			accessory.log('DEBUG','targetSecurityState value null, skip');
 		}
 	}
+	accessory.log('DEBUG','currentState',accessory.currentState);
+	accessory.log('DEBUG','targetState',accessory.targetState);
+	accessory.log('DEBUG','currSecState',accessory.currentSecurityState);
+	accessory.log('DEBUG','tarSecState',accessory.targetSecurityState);
+
 }
 
 YaleSmartLockAccessory.prototype.getServices = function() {
