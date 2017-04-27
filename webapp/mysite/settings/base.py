@@ -13,7 +13,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+#BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 # Quick-start development settings - unsuitable for production
@@ -225,3 +226,10 @@ else:
 YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = 'http://127.0.0.1:9000/yale/'
 #YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = ''
 YALE_STATUS_POLL_TIME_PERIOD = 15 # seconds
+YALE_EVENT_HTTP_POST_HC2 = {
+    'hostname':'',
+    'account': '',
+    'password': '',
+    'device_id': '',
+    'device_prop': ''
+    }
