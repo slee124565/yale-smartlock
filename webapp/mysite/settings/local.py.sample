@@ -1,0 +1,7 @@
+YALE_EVENT_HTTP_POST_HC2 = {
+    'hostname':'192.168.10.60',
+    'account': 'service@flh.com.tw',
+    'password': '1234qwer!@#$QWER',
+    'device_id': '412',
+    'device_prop': 'ui.status.value'
+    }
