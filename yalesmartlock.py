@@ -17,6 +17,7 @@ import time
 import threading
 import Queue
 import requests
+from requests.auth import HTTPBasicAuth
 
 YALE_DATA_UNLOCK_BY_PIN         = [0x05,0x19,0x81,0x11]
 YALE_DATA_UNLOCK_BY_IBUTTON     = [0x05,0x19,0x81,0x22]
@@ -199,7 +200,31 @@ class SerialToNet(serial.threaded.Protocol):
                             logger.debug('DDL event %s http post notify to url %s' % (evt_name,post_url))
                         else:
                             logger.warning('DDL event %s http post fail with url %s' % (evt_name,post_url))
-                        
+
+                    if settings.YALE_EVENT_HTTP_POST_HC2['hostname'] or \
+                        settings.YALE_EVENT_HTTP_POST_HC2['username'] or \
+                        settings.YALE_EVENT_HTTP_POST_HC2['password'] or \
+                        settings.YALE_EVENT_HTTP_POST_HC2['device_id'] or \
+                        settings.YALE_EVENT_HTTP_POST_HC2['device_prop']:
+                        logger.debug('origin evt_name: %s' % evt_name)
+                        if len(evt_name.split('/')) > 1:
+                            evt_name = evt_name.split('/')[1]
+                        logger.info('feedback yale event %s for HC2 as %s' % evt_name)
+                        post_url = 'http://%s:80/api/devices/%s/action/setProperty' % (
+                            settings.YALE_EVENT_HTTP_POST_HC2['hostname'],
+                            settings.YALE_EVENT_HTTP_POST_HC2['device_id']
+                            )
+                        logger.debug('post_url: %s' % post_url)
+                        payload = {'args': [
+                            settings.YALE_EVENT_HTTP_POST_HC2['device_prop'],evt_name
+                            ]}
+                        logger.debug('payload: %s' % str(payload))
+                        r = requests.get(post_url, 
+                                    data = payload,
+                                    auth=HTTPBasicAuth(settings.YALE_EVENT_HTTP_POST_HC2['username'], 
+                                                        settings.YALE_EVENT_HTTP_POST_HC2['password']))
+                        logger.debug('hc2 api post result code %s' % r.status_code)
+
                 if not self.socket is None:
                     self.socket.sendall(evt_name + '\n')
                     logger.debug('feedback serial event %s' % evt_name)

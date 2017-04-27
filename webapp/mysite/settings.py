@@ -225,3 +225,10 @@ else:
 YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = 'http://127.0.0.1:9000/yale/'
 #YALE_EVENT_HTTP_POST_NOTIFY_URL_ROOT = ''
 YALE_STATUS_POLL_TIME_PERIOD = 15 # seconds
+YALE_EVENT_HTTP_POST_HC2 = {
+    'hostname':'192.168.10.60',
+    'account': 'service@flh.com.tw',
+    'password': '1234qwer!@#$QWER',
+    'device_id': '412',
+    'device_prop': 'ui.status.value'
+    }
